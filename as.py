@@ -158,6 +158,8 @@ def wr32(x):
     out.append((x>>8)&255)
     out.append(x&255)
 def can_eval(x):
+    if("-po" in args):
+        return True
     if(x in names.keys()):
         return True
     elif is_int(x):
@@ -166,11 +168,13 @@ def can_eval(x):
         return True
     else:
         return False
-def evaluate(x):  
-    if(x in names.keys()):
-        wr32(names[x])
-    elif is_int(x):
+def evaluate(x):
+    if is_int(x):
         wr32(to_int(x))
+    elif("-po" in args):
+        out.append(x)
+    elif(x in names.keys()):
+        wr32(names[x])
     elif x=='$':
         wr32(location)
     else:
@@ -311,54 +315,61 @@ while i<len(tokens):
     else:
         print("error: invalid:"+tokens[i])
     i+=1
-print(str(len(out))+" bytes in size.")
-if("-V" in args):
-    print("generating output...")
-    COE=""
-    for i in out:
-        COE+='X"'+(hex(i)[2:]).zfill(2)+'",'
-    fout=fdat_upper+str(len(out)-1)+fdat_mid+COE[:len(COE)-1]+fdat_lower
-    f=open(ofn+".vhd",'w')
-    f.write(fout)
+if("-po" in args):
+    print("Making python object file...")
+    obj={"code":out,"lbl":names}
+    f=open(ofn+'.po','w')
+    f.write(str(obj))
     f.close()
-    COE="memory_initialization_radix=16;\nmemory_initialization_vector=\n"
-    for i in out:
-        COE+=(hex(i)[2:]).zfill(2)+',\n'
-    fout=COE[:len(COE)-2]+';'
-    f=open(ofn+".coe",'w')
-    f.write(fout)
+else:
+    print("Writing binary file...")
+    f=open(ofn+'.bin','wb')
+    f.write(bytes(out))
     f.close()
-    print("Wrote "+ofn+".vhd and "+ofn+".coe ...")
-if("-DW" in args):
-    print("attempting write on port 3...")
-    import serial
-    x=serial.Serial(port="COM3",baudrate=115200)
-    import time
-    time.sleep(3)
-    x.write(b'0')
-    for i in range(0,len(out)):
-        x.write(b'3')
-        x.write(bytes([0,0,0,i,out[i]]))
-        time.sleep(0.1)
-        print(str(int((i+1)/(len(out)/100)))+"% complete")
-    x.write(b'0')
-    print("verifying...")
-    for i in range(0,len(out)):
-        while x.in_waiting:
-            x.read()
-        x.write(b'1')
-        x.write(bytes([0,0,0,i]))
-        tmp=x.read()
-        if(ord(tmp)!=out[i]):
-            print("Error while verifying.")
-            print("@"+str(i))
-            print("="+str(out[i]))
-            print(ord(tmp))
-        time.sleep(0.1)
-        print(str(int((i+1)/(len(out)/100)))+"% complete")
-    print("wrote output format SERIAL...")
-print("Writing binary file...")
-f=open(ofn+'.bin','wb')
-f.write(bytes(out))
-f.close()
+    print(str(len(out))+" bytes in size.")
+    if("-V" in args):
+        print("generating output...")
+        COE=""
+        for i in out:
+            COE+='X"'+(hex(i)[2:]).zfill(2)+'",'
+        fout=fdat_upper+str(len(out)-1)+fdat_mid+COE[:len(COE)-1]+fdat_lower
+        f=open(ofn+".vhd",'w')
+        f.write(fout)
+        f.close()
+        COE="memory_initialization_radix=16;\nmemory_initialization_vector=\n"
+        for i in out:
+            COE+=(hex(i)[2:]).zfill(2)+',\n'
+        fout=COE[:len(COE)-2]+';'
+        f=open(ofn+".coe",'w')
+        f.write(fout)
+        f.close()
+        print("Wrote "+ofn+".vhd and "+ofn+".coe ...")
+    if("-DW" in args):
+        print("attempting write on port 3...")
+        import serial
+        x=serial.Serial(port="COM3",baudrate=115200)
+        import time
+        time.sleep(3)
+        x.write(b'0')
+        for i in range(0,len(out)):
+            x.write(b'3')
+            x.write(bytes([0,0,0,i,out[i]]))
+            time.sleep(0.1)
+            print(str(int((i+1)/(len(out)/100)))+"% complete")
+        x.write(b'0')
+        print("verifying...")
+        for i in range(0,len(out)):
+            while x.in_waiting:
+                x.read()
+            x.write(b'1')
+            x.write(bytes([0,0,0,i]))
+            tmp=x.read()
+            if(ord(tmp)!=out[i]):
+                print("Error while verifying.")
+                print("@"+str(i))
+                print("="+str(out[i]))
+                print(ord(tmp))
+            time.sleep(0.1)
+            print(str(int((i+1)/(len(out)/100)))+"% complete")
+        print("wrote output format SERIAL...")
 print("done.")
