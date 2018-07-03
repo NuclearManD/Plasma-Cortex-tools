@@ -25,4 +25,7 @@ $RECYCLE.BIN/
 
 # working folder
 build/
+reference/
+
 test.spec
+*.spec
