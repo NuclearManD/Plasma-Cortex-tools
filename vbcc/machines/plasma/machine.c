@@ -281,7 +281,7 @@ void gen_code(FILE *f,struct IC *p,struct Var *v,zmax offset)
 				emit(f,"\t%s\n",ret);
 			}else{
 				if(t==exit_label) need_return=1;
-				emit(f,"\tbra\t%d\n",t); // idk yet
+				emit(f,"\tjmp\t%d\n",t); // idk yet, I think this is jmp
 			}
 			cc=0;continue;
 		}
