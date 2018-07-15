@@ -1,3 +1,13 @@
+/*
+
+	Assembly Generator for the Nuclaer Tech Plasma Cortex, a VHDL soft processor for FPGAs.
+	Outputs NASM syntax, meant to be used with as.exe (on windows), or the respective program on Linux (not yet built).
+
+	Assembly Generator für den Nuclaer Tech Plasma Cortex, einen VHDL Softprozessor für FPGAs.
+	Gibt die NASM-Syntax aus, die mit as.exe (unter Windows) verwendet werden soll, oder das entsprechende Programm unter Linux (noch nicht erstellt).
+	Bitte vergib Fehlübersetzungen.
+*/
+
 #include "supp.h"
 
 char cg_copyright[]="Copyright Dylan Brophy 2018";
@@ -167,25 +177,25 @@ int init_cg(void){
 	align[UNION]=l2zm(1L);
 	
 	t_min[CHAR]=l2zm(-128L);
-		t_min[SHORT]=l2zm(-32768L);
-		t_min[LONG]=zmsub(l2zm(-2147483647L),l2zm(1L));
-		t_min[INT]=t_min(LONG);
-		t_min[LLONG]=t_min(LONG);
-		t_min[MAXINT]=t_min(LLONG);
+	t_min[SHORT]=l2zm(-32768L);
+	t_min[LONG]=zmsub(l2zm(-2147483647L),l2zm(1L));
+	t_min[INT]=t_min(LONG);
+	t_min[LLONG]=t_min(LONG);
+	t_min[MAXINT]=t_min(LLONG);
 	
-		t_max[CHAR]=ul2zum(127L);
-		t_max[SHORT]=ul2zum(32767UL);
-		t_max[LONG]=ul2zum(2147483647UL);
-		t_max[INT]=t_max(LONG);
-		t_max[LLONG]=t_max(LONG);
-		t_max[MAXINT]=t_max(LLONG);
+	t_max[CHAR]=ul2zum(127L);
+	t_max[SHORT]=ul2zum(32767UL);
+	t_max[LONG]=ul2zum(2147483647UL);
+	t_max[INT]=t_max(LONG);
+	t_max[LLONG]=t_max(LONG);
+	t_max[MAXINT]=t_max(LLONG);
 	
-		tu_max[CHAR]=ul2zum(255UL);
-		tu_max[SHORT]=ul2zum(65535UL);
-		tu_max[LONG]=ul2zum(4294967295UL);
-		tu_max[INT]=tu_max(LONG);
-		tu_max[LLONG]=tu_max(LONG);
-		tu_max[MAXINT]=tu_max(LLONG);
+	tu_max[CHAR]=ul2zum(255UL);
+	tu_max[SHORT]=ul2zum(65535UL);
+	tu_max[LONG]=ul2zum(4294967295UL);
+	tu_max[INT]=tu_max(LONG);
+	tu_max[LLONG]=tu_max(LONG);
+	tu_max[MAXINT]=tu_max(LLONG);
 	
 	for(int i=0;i<MAXR+1;i++)
 		regsize[i]=l2zm(4L);
