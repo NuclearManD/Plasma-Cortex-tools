@@ -3497,7 +3497,7 @@ void gen_dc(FILE *f,int t,struct const_list *p)
       if(GAS) s="0x"; else s="$";
       emit(f,"%s%02x%02x%02x%02x",s,ip[0],ip[1],ip[2],ip[3]);
       if((t&NQ)!=FLOAT){
-	emit(f,",%s%02x%02x%02x%02x",s,ip[4],ip[5],ip[6],ip[7]);
+		emit(f,",%s%02x%02x%02x%02x",s,ip[4],ip[5],ip[6],ip[7]);
       }
     }else if((t&NQ)==LLONG){
       zumax tmp;
