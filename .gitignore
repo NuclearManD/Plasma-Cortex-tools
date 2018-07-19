@@ -30,3 +30,13 @@ reference/
 test.spec
 *.spec
 *.po
+vbcc/bin/dtgen.exe
+vbcc/bin/vbcchc12.exe
+vbcc/bin/vbcctestdev.exe
+*.o
+vbcc/bin/vbccalpha.exe
+vbcc/machines/alpha/
+vbcc/machines/hc12/
+vbcc/machines/bi386/
+vbcc/machines/testdev/
+vbcc/machines/bi386/machine.h
