@@ -95,9 +95,20 @@ static long voff(struct obj *p)
 	else
 		return zm2l(p->v->offset)+zm2l(p->val.vmax)-stackoffset;
 }
+static void pop(long l)
+{
+	stackoffset+=l;
+}
+static void push(long l)
+{
+	stackoffset-=l;
+	if(stackoffset<maxpushed) maxpushed=stackoffset;
+	if(-maxpushed>stack) stack=-maxpushed;
+}
 static void function_top(FILE *f,struct Var *v,long offset)
 /*	erzeugt Funktionskopf											 */
 {
+	emit(f,"\t;function_top\n");
 	int i;
 	emit(f,"# offset=%ld\n",offset);
 	have_frame=0;stack_valid=1;stack=0;
@@ -107,7 +118,7 @@ static void function_top(FILE *f,struct Var *v,long offset)
 			emit(f,"\t.global\t%s\n",v->identifier);
 		emit(f,"%s:\n",v->identifier);
 	}else{
-		emit(f,"%s%ld:\n",zm2l(v->offset));
+		emit(f,".%ld:\n",zm2l(v->offset));
 	}
 	if(stack_check){
 		stackchecklabel=++label;
@@ -117,48 +128,56 @@ static void function_top(FILE *f,struct Var *v,long offset)
 	}
 	if(offset){
 		if(offset==1)
-			emit(f,"\tpshb\n");
+			emit(f,"\tinc\tsp\n");
 		else if(offset==2)
-			emit(f,"\tpshd\n");
+			emit(f,"\tinc\tsp\n\tinc\tsp\n");
 		else
-			emit(f,"\tleas\t-%ld,sp\n",offset);
+			emit(f,"\tadd\tsp,%d\n",offset);
 		have_frame=1;
 	}
 }
-static void emit_obj(FILE *f,struct obj *p,int t)
+// this function makes the stack offset zero.
+static void zerostack(FILE* f, long off) {
+	if(off==0)return;
+	emit(f,"\tadd\tsp, %d\n",off);
+	stackoffset+=off;
+}
+static void load_obj(FILE *f,struct obj *p,int t,int r)
 /*	Gibt Objekt auf Bildschirm aus											*/
 {
-	if((p->flags&(KONST|DREFOBJ))==(KONST|DREFOBJ)){
-		emitval(f,&p->val,p->dtyp&NU);
-		return;
-	}
-	if(p->flags&VARADR) emit(f,"#");
-	if((p->flags&(DREFOBJ|REG))==(DREFOBJ|REG)) emit(f,"0,");
+	//emit(f,"!");
 	if((p->flags&(DREFOBJ|REG))==DREFOBJ) emit(f,"[");
-	if((p->flags&(VAR|REG))==VAR){
-		if(p->v->storage_class==AUTO||p->v->storage_class==REGISTER){
-			emit(f,"%ld,%s",voff(p),regnames[7]);
-		}else{
-		if(!zmeqto(l2zm(0L),p->val.vmax)){emitval(f,&p->val,LONG);emit(f,"+");}
-			if(p->v->storage_class==STATIC){
-				emit(f,"%s%ld",labprefix,zm2l(p->v->offset));
-			}else{
-				emit(f,"(%s%s)",idprefix,p->v->identifier);
-			}
-		}
+	else if((p->flags&(VAR|REG))==VAR){
+		zerostack(f,voff(p));
+		emit(f,"\tpop\t%s\n",regnames[r]);
+		pop(4);
 	}
-	if(p->flags&REG){
-		if((p->reg)==1&&(t&NQ)==CHAR)
-			emit(f,"b");
-		else
-			emit(f,"%s",regnames[p->reg]);
+	else if(p->flags&REG){
+		emit(f,"\tmov\t%s, %s\n",regnames[r],regnames[p->reg]);
 	}
-	if(p->flags&KONST){
+	else if(p->flags&KONST){
 		/*if(ISFLOAT(t)){
 			emit(f,"%s%d",labprefix,addfpconst(p,t));
 		}else{*/
-			emit(f,"#");emitval(f,&p->val,t&NU);
+			emit(f,"\tmov\t%s,%ld\n",regnames[r],p->val);
 		//}
+	}
+}
+static void store_obj(FILE *f,struct obj *p,int t, int r)
+/*	Gibt Objekt auf Bildschirm aus											*/
+{
+	//emit(f,"!");
+	if((p->flags&(DREFOBJ|REG))==DREFOBJ) emit(f,"[");
+	if((p->flags&(VAR|REG))==VAR){
+		zerostack(f,voff(p));
+		emit(f,"\tpush\t%s\n",regnames[r]);
+		push(4);
+	}
+	if(p->flags&REG){
+		emit(f,"\tmov\t%s, %s\n",regnames[p->reg],regnames[r]);
+	}
+	if(p->flags&KONST){
+		ierror(0);
 	}
 	if((p->flags&(DREFOBJ|REG))==DREFOBJ){
 		if(p->v->storage_class==EXTERN||p->v->storage_class==STATIC)
@@ -169,6 +188,7 @@ static void emit_obj(FILE *f,struct obj *p,int t)
 static void function_bottom(FILE *f,struct Var *v,long offset)
 /*	erzeugt Funktionsende											 */
 {
+	emit(f,"\t;function_bottom\n");
 	int i;
 	if(offset){
 		if(offset==1)
@@ -176,7 +196,7 @@ static void function_bottom(FILE *f,struct Var *v,long offset)
 		else if(offset==2)
 			emit(f,"\tdec sp\n\tdec sp\n");
 		else
-			emit(f,"\t@leas\t%ld,%s\n",offset,regnames[7]);
+			emit(f,"\tadd\tsp,-%d\n",offset);
 	}
 	if(v->storage_class==EXTERN){
 		emit(f,"\t.type\t%s%s,@function\n",idprefix,v->identifier);
@@ -208,16 +228,6 @@ static void callee_push(long l)
 	if(l-stackoffset>stack)
 		stack=l-stackoffset;
 }
-static void push(long l)
-{
-	stackoffset-=l;
-	if(stackoffset<maxpushed) maxpushed=stackoffset;
-	if(-maxpushed>stack) stack=-maxpushed;
-}
-static void pop(long l)
-{
-	stackoffset+=l;
-}
 // I think that l is the number of bytes to pop.
 static void gen_pop(FILE *f,long l)
 {
@@ -245,31 +255,25 @@ static void load_reg(FILE *f,int r,struct obj *o,int t)
 {
 	if((o->flags&(REG|DREFOBJ))==REG){
 		if(o->reg==r) return;
-		emit(f,"\ttfr\t%s,%s\n",regnames[o->reg],regnames[r]);
+		emit(f,"\tmov\t%s,%s\n",regnames[r],regnames[o->reg]);
 		return;
 	}
-	if(r==acc&&(o->flags&(KONST|DREFOBJ))==KONST){
+	if(r==1&&(o->flags&(KONST|DREFOBJ))==KONST){
 		eval_const(&o->val,t);
 		if(zmeqto(vmax,l2zm(0L))&&zumeqto(vumax,ul2zum(0UL))){
-			emit(f,"\tclra\n\tclrb\n");
-			cc=o;cc_t=t;
+			emit(f,"\txor\tax\n");
 			return;
 		}
 	}
-	emit(f,"\tld%s\t",(r==acc&&(t&NQ)==CHAR)?"ab":regnames[r]);
-	//emit_obj(f,o,t);
-	emit(f,"\n");
-	cc=o;cc_t=t;
+	load_obj(f,o,t,r);
 }
 static void store_reg(FILE *f,int r,struct obj *o,int t)
 {
 	if((o->flags&(REG|DREFOBJ))==REG){
 		if(o->reg==r) return;
-		emit(f,"\ttfr\t%s,%s\n",regnames[r],regnames[o->reg]);
+		emit(f,"\tmov\t%s,%s\n",regnames[o->reg],regnames[r]);
 	}else{
-		emit(f,"\tst%s\t",(r==acc&&(t&NQ)==CHAR)?"ab":regnames[r]);
-		//emit_obj(f,o,t);emit(f,"\n");
-		cc=o;cc_t=t;
+		store_obj(f,o,t,r);
 	}
 }
 
@@ -400,9 +404,12 @@ void gen_code(FILE *f,struct IC *p,struct Var *v,zmax offset)
 			regs[p->q1.reg]=0;
 			continue;
 		}
-		if(c==LABEL) {emit(f,"l%d:\n",t);continue;
+		if(c==LABEL) {
+			emit(f,"l%d:\n",t);
+			continue;
 		}
-		if(c>=BEQ&&c<=BGT&&t==exit_label) need_return=1;
+		if(c>=BEQ&&c<=BGT&&t==exit_label)
+			need_return=1;
 		if(c==BRA){
 			if(p->typf==exit_label&&!have_frame){
 				emit(f,"\tret\n");
@@ -479,13 +486,30 @@ void gen_code(FILE *f,struct IC *p,struct Var *v,zmax offset)
 		}
 		if(c==CALL){
 			int reg,jmp=0;
-			emit(f,"\tcall\t");
-			//emit_obj(f,&p->q1,t);
-			emit(f,"\n");
+			if((p->flags&(DREFOBJ|REG))==DREFOBJ) ierror(0);
+			else if((p->flags&(VAR|REG))==VAR){
+				//zerostack(f,voff(p));
+				//emit(f,"\tpop\t%s\t; stackoffset = %d\n",regnames[r],stackoffset);
+				//pop(4);
+			}
+			else if(p->flags&REG){
+				emit(f,"\tcall\t%s\n",regnames[(&p->q1)->reg]);
+			}
+			else if(p->flags&KONST){
+				/*if(ISFLOAT(t)){
+					emit(f,"%s%d",labprefix,addfpconst(p,t));
+				}else{*/
+					emit(f,"\tmov\t%s,%d\n",(&p->q1)->val);
+				//}
+			}
 			continue;
 		}if(c==ASSIGN){
-			load_reg(f,acc,&p->q1,t);
-			store_reg(f,acc,&p->z,t);
+			if((&p->q1)->flags&(VAR|REG|DREFOBJ)==REG&&(&p->z)->flags&(VAR|REG|DREFOBJ)==REG&&(&p->q1)->reg==(&p->z)->reg){
+				continue;
+			}else{
+				load_reg(f,acc,&p->q1,t);
+				store_reg(f,acc,&p->z,t);
+			}
 			continue;
 		}
 		if(c==PUSH){
@@ -555,7 +579,7 @@ void gen_code(FILE *f,struct IC *p,struct Var *v,zmax offset)
 			else if(c==AND)s="and";
 			else if(c==MULT)s="mul";
 			load_reg(f,acc,&p->q1,t);
-			load_reg(f,2,&p->q1,t); // load into BX
+			load_reg(f,2,&p->q2,t); // load into BX
 			emit(f,"\t%s\tax, bx\n",s);
 			store_reg(f,acc,&p->z,t);
 			continue;
@@ -626,7 +650,7 @@ void gen_dc(FILE *f, int t, struct const_list *p){
 		p->tree->o.flags&=~VARADR;
 		m2=g_flags[5];
 		g_flags[5]&=~USEDFLAG;
-		//emit_obj(f,&p->tree->o,t&NU);
+		emit_obj(f,&p->tree->o,t&NU);
 		p->tree->o.flags=m;
 	}*/
 	int data=-1;
