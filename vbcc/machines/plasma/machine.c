@@ -92,7 +92,7 @@ static char *uccs[]={"z","nz","c","nc","LessThan|EqualTo","GreaterThan"};// unsi
 static long voff(struct obj *p)
 {
 	if(zm2l(p->v->offset)<0) 
-		return loff-zm2l(p->v->offset)+zm2l(p->val.vmax)-stackoffset+1;
+		return loff-zm2l(p->v->offset)+zm2l(p->val.vmax)-stackoffset;
 	else
 		return zm2l(p->v->offset)+zm2l(p->val.vmax)-stackoffset;
 }
@@ -121,19 +121,13 @@ static void function_top(FILE *f,struct Var *v,long offset)
 	}else{
 		emit(f,".%ld:\n",zm2l(v->offset));
 	}
-	if(stack_check){
-		stackchecklabel=++label;
-		emit(f,"\tldy\t#l%d\n",stackchecklabel);
-		/* FIXME: banked */
-		emit(f,"\tbsr\t__stack_check\n");
-	}
 	if(offset){
 		if(offset==1)
 			emit(f,"\tinc\tsp\n");
 		else if(offset==2)
 			emit(f,"\tinc\tsp\n\tinc\tsp\n");
 		else
-			emit(f,"\tadd\tsp,%d\n",offset);
+			emit(f,"\tadd\tsp,-%d\n",offset);
 		have_frame=1;
 	}
 }
@@ -211,7 +205,7 @@ static void function_bottom(FILE *f,struct Var *v,long offset)
 		else if(offset==2)
 			emit(f,"\tdec sp\n\tdec sp\n");
 		else
-			emit(f,"\tadd\tsp,-%d\n",offset);
+			emit(f,"\tadd\tsp,%d\n",offset-stackoffset);
 	}
 	emit(f,"\tret\n");
 	if(v->storage_class==EXTERN){
@@ -264,6 +258,7 @@ static void gen_pop(FILE *f,long l)
 		BSET(regs_modified,4);
 	}else{
 		emit(f,"\tadd\tsp, %ld\n",l);
+		return;
 	}
 	pop(l);
 }
@@ -405,6 +400,8 @@ void gen_code(FILE *f,struct IC *p,struct Var *v,zmax offset)
 	}
 	
 	loff=zm2l(offset); // offset as a long
+	if(loff&3!=0)
+		loff+=4-loff&3;
 	
 	function_top(f,v,loff);
 	stackoffset=notpopped=dontpop=maxpushed=0;
@@ -424,7 +421,7 @@ void gen_code(FILE *f,struct IC *p,struct Var *v,zmax offset)
 			emit(f,"l%d:\n",t);
 			continue;
 		}
-		//emit(f,"\t; type=%d\n",c);
+		emit(f,"\t; type=%d\n",c);
 		if(c>=BEQ&&c<=BGT&&t==exit_label)
 			need_return=1;
 		if(c==BRA){
@@ -531,6 +528,7 @@ void gen_code(FILE *f,struct IC *p,struct Var *v,zmax offset)
 					emit(f,"\tcall ax\n");
 				}
 			}
+			//if(p->arg_cnt)
 			continue;
 		}if(c==ASSIGN){
 			if((&p->q1)->flags&(VAR|REG|DREFOBJ)==REG&&(&p->z)->flags&(VAR|REG|DREFOBJ)==REG&&(&p->q1)->reg==(&p->z)->reg){
@@ -543,7 +541,8 @@ void gen_code(FILE *f,struct IC *p,struct Var *v,zmax offset)
 		}
 		if(c==PUSH){
 			load_reg(f,acc,&p->q1,t);
-			emit(f,"push ax");
+			emit(f,"\tpush\tax\n");
+			push(4);
 			continue;
 		}
 		if(c==ADDRESS){
