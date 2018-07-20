@@ -48,7 +48,11 @@ split=False
 com=False
 tmp=""
 tokens=[]
+tklines=[]
+linenum=1
 for i in filedat:
+    if i=='\n' or i=='\r':
+        linenum+=1
     if i==';':
         com=True
     elif(com):
@@ -58,21 +62,29 @@ for i in filedat:
         split=not split
         if(tmp!=""):
             tokens.append(tmp)
+            tklines.append(linenum)
         tmp=""
         if split:
             tokens.append('"')
+            tklines.append(linenum)
     elif (i.isspace() or i==',')and tmp!="'" and not split:
         if(tmp!=""):
             tokens.append(tmp)
+            tklines.append(linenum)
         tmp=""
     else:
         tmp+=i
-tokens.append(tmp)
+if len(tmp)>0:
+    tokens.append(tmp)
+    tklines.append(linenum)
 
 regs=['ax','bx','cx','dx','si','di','sp','pc']
 math_ops={'add':0x80, 'sub':0x81, 'mul':0x82, 'div':0x83, 'xor':0x85, 'and':0x86, 'or':0x87, 'shl':0xC0,'shr':0xC1,'sar':0xC2,'abs':0xC3,'not':0xC4}
 
 names={}
+glbls=[]
+sizes={}
+
 location=0
 i=0
 def to_int(s):
@@ -89,6 +101,17 @@ def is_int(s):
         return type(eval(s))==int
     except:
         return False
+def can_eval(x):
+    if("-po" in args):
+        return True
+    if(x in names.keys()):
+        return True
+    elif is_int(x):
+        return True
+    elif x=='$':
+        return True
+    else:
+        return False
 while i<len(tokens):
     if tokens[i].endswith(':'):
         names[tokens[i].replace(':','')]=location
@@ -96,9 +119,28 @@ while i<len(tokens):
         i-=1
     else:
         tokens[i]=tokens[i].lower()
-        if tokens[i]=="org":
+        if tokens[i]==".org":
             i=i+1
             location=to_int(tokens[i])
+        elif tokens[i]==".section":
+            i+=1
+            #ignore for now
+        elif tokens[i]==".global":
+            i+=1
+            glbls.append(tokens[i])
+        elif tokens[i]==".size":
+            i+=1
+            qzx=tokens[i]
+            i+=1
+            m=tokens[i]
+            ln=tklines[i]
+            while tklines[i+1]==ln:
+                i+=1
+                m+=tokens[i]
+            m=m.replace('$',str(location))
+            for j in names:
+                m=m.replace(j,str(names[j]))
+            print(eval(m))
         elif tokens[i]=='"':
             i+=1
             location+=len(tokens[i])
@@ -123,6 +165,9 @@ while i<len(tokens):
         elif tokens[i]=="nop":
             location+=1
         elif tokens[i] in math_ops.keys():
+            if(tokens[i+1]=='sp' and can_eval(tokens[i+2]) and tokens[i]=='add'):
+                location+=4 # adding constant to sp
+                i+=1
             location+=1
             i+=1
         elif tokens[i] in ["push","pop"]:
@@ -134,8 +179,9 @@ while i<len(tokens):
         elif tokens[i]=="mov":
             location+=1
             if(not('[' in tokens[i+1] or '[' in tokens[i+2])):
-                if(not tokens[i+2] in regs):
-                    location+=4
+                pass #location+=4
+            elif(not tokens[i+2] in regs):
+                location+=4
             i+=2
         elif tokens[i]=="out":
             location+=5
@@ -149,6 +195,7 @@ while i<len(tokens):
         else:
             print("preprocessor:  invalid token: "+tokens[i])
     i+=1
+lsloc=location
 location=0
 coe=""
 out=[]
@@ -157,17 +204,6 @@ def wr32(x):
     out.append((x>>16)&255)
     out.append((x>>8)&255)
     out.append(x&255)
-def can_eval(x):
-    if("-po" in args):
-        return True
-    if(x in names.keys()):
-        return True
-    elif is_int(x):
-        return True
-    elif x=='$':
-        return True
-    else:
-        return False
 def evaluate(x):
     if is_int(x):
         wr32(to_int(x))
@@ -178,13 +214,34 @@ def evaluate(x):
     elif x=='$':
         wr32(location)
     else:
-        print("Error: '"+tokens[i]+"' is not a valid number, identifier, or symbol.")
+        errormsg("'"+tokens[i]+"' is not a valid number, identifier, or symbol.")
 i=0
+def errormsg(string):
+    print("Error on line "+str(tklines[i])+": "+string)
 while i<len(tokens):
     tokens[i]=tokens[i].lower()
-    if tokens[i]=="org":
+    if tokens[i]==".org":
         i=i+1
         location=to_int(tokens[i])
+    elif tokens[i]==".section":
+        i+=1
+        #ignore for now
+    elif tokens[i]==".global":
+        i+=1
+        glbls.append(tokens[i])
+    elif tokens[i]==".size":
+        i+=1
+        qzx=tokens[i]
+        i+=1
+        m=tokens[i]
+        ln=tklines[i]
+        while tklines[i+1]==ln:
+            i+=1
+            m+=tokens[i]
+        m=m.replace('$',str(location))
+        for j in names:
+            m=m.replace(j,str(names[j]))
+        print(eval(m))
     elif tokens[i]=="db":
         i=i+1
         out.append(to_int(tokens[i]))
@@ -215,25 +272,31 @@ while i<len(tokens):
         evaluate(tokens[i])
         location+=5
     elif tokens[i] in math_ops.keys():
-        i+=1
-        try:
-            out.append(math_ops[tokens[i-1]]|(regs.index(tokens[i])<<4))
-        except:
-            print("Error: '"+tokens[i]+"' is not a valid 32-bit register.")
-        location+=1
+        if(tokens[i+1]=='sp' and can_eval(tokens[i+2]) and tokens[i]=='add'):
+            out.append(0x7D)
+            location+=5
+            i+=2
+            evaluate(tokens[i])
+        else:
+            i+=1
+            try:
+                out.append(math_ops[tokens[i-1]]|(regs.index(tokens[i])<<4))
+            except:
+                errormsg("'"+tokens[i]+"' is not a valid 32-bit register.")
+            location+=1
     elif tokens[i]=="push":
         i+=1
         try:
             out.append(0xA8|(regs.index(tokens[i])))
         except:
-            print("Error: '"+tokens[i]+"' is not a valid 32-bit register.")
+            errormsg("'"+tokens[i]+"' is not a valid 32-bit register.")
         location+=1
     elif tokens[i]=="pop":
         i+=1
         try:
             out.append(0x28|(regs.index(tokens[i])))
         except:
-            print("Error: '"+tokens[i]+"' is not a valid 32-bit register.")
+            errormsg("'"+tokens[i]+"' is not a valid 32-bit register.")
         location+=1
     elif tokens[i]=="lodsb":
         out.append(0x7E)
@@ -258,31 +321,31 @@ while i<len(tokens):
             try:
                 out.append(0x88|regs.index(tokens[i-1][1:3])|(regs.index(tokens[i])<<4))
             except:
-                print("Error: '"+tokens[i-1]+'/'+tokens[i]+"' is not a valid 32-bit register.")
+                errormsg("'"+tokens[i-1]+'/'+tokens[i]+"' is not a valid 32-bit register.")
             location+=1
         elif('[' in tokens[i+2]):
             i+=2
             try:
                 out.append(0x80|regs.index(tokens[i][1:3])|(regs.index(tokens[i-1])<<4))
             except:
-                print("Error: '"+tokens[i-1]+'/'+tokens[i]+"' is not a valid 32-bit register.")
+                errormsg("'"+tokens[i-1]+'/'+tokens[i]+"' is not a valid 32-bit register.")
+            location+=1
+        elif tokens[i+2] in regs:
+            i+=2
+            try:
+                out.append(regs.index(tokens[i-1])|(regs.index(tokens[i])<<4))
+            except:
+                errormsg("'"+tokens[i-1]+'/'+tokens[i]+"' is not a valid 32-bit register.")
             location+=1
         elif(can_eval(tokens[i+2])):
             i+=1
             try:
                 out.append(0xF8|regs.index(tokens[i]))
             except:
-                print("Error: '"+tokens[i]+"' is not a valid 32-bit register.")
+                errormsg("'"+tokens[i]+"' is not a valid 32-bit register.")
             i+=1
             evaluate(tokens[i])
             location+=5
-        else:
-            i+=2
-            try:
-                out.append(regs.index(tokens[i-1])|(regs.index(tokens[i+1])<<4))
-            except:
-                print("Error: '"+tokens[i-1]+'/'+tokens[i]+"' is not a valid 32-bit register.")
-            location+=1
     elif tokens[i]=="out":
         if is_int(tokens[i+2]):
             i+=2
@@ -297,7 +360,7 @@ while i<len(tokens):
             try:
                 out.append(regs.index(tokens[i+1]))
             except:
-                print("Error: '"+tokens[i+1]+"' is not a valid 32-bit register or number constant.")
+                errormsg("'"+tokens[i+1]+"' is not a valid 32-bit register or number constant.")
             i+=1
             evaluate(tokens[i-1])
         location+=5
@@ -308,13 +371,15 @@ while i<len(tokens):
         try:
             out.append(regs.index(tokens[i]))
         except:
-            print("Error: '"+tokens[i]+"' is not a valid 32-bit register or number constant.")
+            errormsg("'"+tokens[i]+"' is not a valid 32-bit register or number constant.")
         i+=1
         evaluate(tokens[i])
         location+=5
     else:
-        print("error: invalid:"+tokens[i])
+        errormsg("invalid:"+tokens[i])
     i+=1
+if(lsloc!=location):
+    print("WARNING: stages 1 and 2 found differing byte counts "+str(lsloc)+" and "+str(location)+"!!")
 if("-po" in args):
     print("Making python object file...")
     obj={"code":out,"lbl":names}
