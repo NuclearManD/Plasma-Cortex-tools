@@ -43,8 +43,8 @@ zumax tu_max[MAX_TYPE+1];
 
 char *regnames[MAXR+1]={"none","ax","bx","cx","dx","si","di","sp","pc"};
 zmax regsize[MAXR+1];
-int regscratch[MAXR+1]={0,1,1,1,1,0,0,0,0};
-int regsa[MAXR+1]={0,0,0,0,0,1,1,1,1};
+int regscratch[MAXR+1]={0,1,1,1,1,1,0,0,0};
+int regsa[MAXR+1]={1,0,0,0,0,1,1,1,1};
 int reg_prio[MAXR+1]={0,1,1,1,1,1,1,1,1};
 struct Typ *regtype[MAXR+1];
 
@@ -61,6 +61,7 @@ private functions/data
 much of this is from the hc12 backend.
 */
 
+struct Typ regType={INT};
 
 static int section=-1,newobj,scnt,pushed_acc;
 static char *codename="\t.text\n",
@@ -108,7 +109,7 @@ static void push(long l)
 static void function_top(FILE *f,struct Var *v,long offset)
 /*	erzeugt Funktionskopf											 */
 {
-	emit(f,"\t;function_top\n");
+	//emit(f,"\t;function_top\n");
 	int i;
 	emit(f,"# offset=%ld\n",offset);
 	have_frame=0;stack_valid=1;stack=0;
@@ -116,7 +117,7 @@ static void function_top(FILE *f,struct Var *v,long offset)
 	if(v->storage_class==EXTERN){
 		if((v->flags&(INLINEFUNC|INLINEEXT))!=INLINEFUNC)
 			emit(f,"\t.global\t%s\n",v->identifier);
-		emit(f,"%s:\n",v->identifier);
+		emit(f,"_%s:\n",v->identifier);
 	}else{
 		emit(f,".%ld:\n",zm2l(v->offset));
 	}
@@ -142,36 +143,50 @@ static void zerostack(FILE* f, long off) {
 	emit(f,"\tadd\tsp, %d\n",off);
 	stackoffset+=off;
 }
-static void load_obj(FILE *f,struct obj *p,int t,int r)
+static void load_obj(FILE *f,struct obj *p,int t,int reg)
 /*	Gibt Objekt auf Bildschirm aus											*/
 {
+	//emit(f,"\t;load_obj\n");
 	//emit(f,"!");
-	if((p->flags&(DREFOBJ|REG))==DREFOBJ) emit(f,"[");
+	if((p->flags&(DREFOBJ|REG))==DREFOBJ) ;//emit(f,"[");
 	else if((p->flags&(VAR|REG))==VAR){
-		zerostack(f,voff(p));
-		emit(f,"\tpop\t%s\n",regnames[r]);
-		pop(4);
+		if(isextern(p->v->storage_class)){
+			emit(f,"\tmov\tdi, _%s",p->v->identifier);
+			emit(f,"+%d\n",zm2l(p->val.vmax));
+			emit(f,"\tmov\t%s, [di]\n",regnames[reg]);
+		}else if(isstatic(p->v->storage_class)){
+			emit(f,"\tmov\tdi, l%d\n",p->v->offset);
+			emit(f,"\tmov\t%s, [di]\n",regnames[reg]);
+		}else
+			emit(f,"\tmov\t%s, [sp+%d]\n",regnames[reg],voff(p));
 	}
 	else if(p->flags&REG){
-		emit(f,"\tmov\t%s, %s\n",regnames[r],regnames[p->reg]);
+		emit(f,"\tmov\t%s, %s\n",regnames[reg],regnames[p->reg]);
 	}
 	else if(p->flags&KONST){
 		/*if(ISFLOAT(t)){
 			emit(f,"%s%d",labprefix,addfpconst(p,t));
 		}else{*/
-			emit(f,"\tmov\t%s,%ld\n",regnames[r],p->val);
+			emit(f,"\tmov\t%s,%ld\n",regnames[reg],p->val);
 		//}
 	}
+	//p->v->identifier
 }
 static void store_obj(FILE *f,struct obj *p,int t, int r)
 /*	Gibt Objekt auf Bildschirm aus											*/
 {
-	//emit(f,"!");
-	if((p->flags&(DREFOBJ|REG))==DREFOBJ) emit(f,"[");
+	//emit(f,"\t;store_obj\n");
+	//if((p->flags&(DREFOBJ|REG))==DREFOBJ) emit(f,"[");
 	if((p->flags&(VAR|REG))==VAR){
-		zerostack(f,voff(p));
-		emit(f,"\tpush\t%s\n",regnames[r]);
-		push(4);
+		if(isextern(p->v->storage_class)){
+			emit(f,"\tmov\tdi, _%s",p->v->identifier);
+			emit(f,"+%d\n",zm2l(p->val.vmax));
+			emit(f,"\tmov\t[di], %s\n",regnames[r]);
+		}else if(isstatic(p->v->storage_class)){
+			emit(f,"\tmov\tdi, l%d\n",p->v->offset);
+			emit(f,"\tmov\t[di], %s\n",regnames[r]);
+		}else
+			emit(f,"\tmov\t[sp+%d], %s\n",voff(p),regnames[r]);
 	}
 	if(p->flags&REG){
 		emit(f,"\tmov\t%s, %s\n",regnames[p->reg],regnames[r]);
@@ -180,15 +195,15 @@ static void store_obj(FILE *f,struct obj *p,int t, int r)
 		ierror(0);
 	}
 	if((p->flags&(DREFOBJ|REG))==DREFOBJ){
-		if(p->v->storage_class==EXTERN||p->v->storage_class==STATIC)
-			emit(f,",pc");
-		emit(f,"]");
+		//if(p->v->storage_class==EXTERN||p->v->storage_class==STATIC)
+			//emit(f,",pc");
+		//emit(f,"]");
 	}
 }
 static void function_bottom(FILE *f,struct Var *v,long offset)
 /*	erzeugt Funktionsende											 */
 {
-	emit(f,"\t;function_bottom\n");
+	//emit(f,"\t;function_bottom\n");
 	int i;
 	if(offset){
 		if(offset==1)
@@ -198,6 +213,7 @@ static void function_bottom(FILE *f,struct Var *v,long offset)
 		else
 			emit(f,"\tadd\tsp,-%d\n",offset);
 	}
+	emit(f,"\tret\n");
 	if(v->storage_class==EXTERN){
 		emit(f,"\t.type\t%s%s,@function\n",idprefix,v->identifier);
 		emit(f,"\t.size\t%s%s,$-%s%s\n",idprefix,v->identifier,idprefix,v->identifier);
@@ -247,7 +263,7 @@ static void gen_pop(FILE *f,long l)
 		emit(f,"\tpop dx\n");
 		BSET(regs_modified,4);
 	}else{
-		emit(f,"\talloc %ld\n",l);
+		emit(f,"\tadd\tsp, %ld\n",l);
 	}
 	pop(l);
 }
@@ -260,7 +276,7 @@ static void load_reg(FILE *f,int r,struct obj *o,int t)
 	}
 	if(r==1&&(o->flags&(KONST|DREFOBJ))==KONST){
 		eval_const(&o->val,t);
-		if(zmeqto(vmax,l2zm(0L))&&zumeqto(vumax,ul2zum(0UL))){
+		if(zmeqto(vmax,l2zm(0L))&&zumeqto(vumax,ul2zum(0UL))&&r==1){
 			emit(f,"\txor\tax\n");
 			return;
 		}
@@ -336,7 +352,7 @@ int init_cg(void){
 	
 	for(int i=0;i<MAXR+1;i++){
 		regsize[i]=l2zm(4L);
-		regtype[i]=LONG;
+		regtype[i]=&regType;
 	}
 	return 1;
 }
@@ -375,7 +391,7 @@ int shortcut(int code, int t){
 /*	needs for local variables.							*/
 void gen_code(FILE *f,struct IC *p,struct Var *v,zmax offset)
 {
-	int c,t,lastcomp=0,reg,short_add,bit_reverse,need_return=0;
+	int c,t,i,lastcomp=0,reg,short_add,bit_reverse,need_return=0;
 	struct obj *bit_obj;char *bit_reg;
 	static int idone;
 	struct obj o;
@@ -408,22 +424,18 @@ void gen_code(FILE *f,struct IC *p,struct Var *v,zmax offset)
 			emit(f,"l%d:\n",t);
 			continue;
 		}
+		//emit(f,"\t; type=%d\n",c);
 		if(c>=BEQ&&c<=BGT&&t==exit_label)
 			need_return=1;
 		if(c==BRA){
-			if(p->typf==exit_label&&!have_frame){
-				emit(f,"\tret\n");
-			}else{
-				if(t==exit_label) need_return=1;
-				emit(f,"\tjmp\t%d\n",t); // idk yet, I think this is jmp
-			}
+			emit(f,"\tjmp\tl%d\n",t);
 			continue;
 		}
 		if(c>=BEQ&&c<BRA){			
 			if(t&UNSIGNED)
-				emit(f,"\tj%s\t%s%d\n",uccs[c-BEQ],t);
+				emit(f,"\tj%s\tl%d\n",uccs[c-BEQ],t);
 			else
-				emit(f,"\tj%s\t%s%d\n",ccs[c-BEQ],t);
+				emit(f,"\tj%s\tl%d\n",ccs[c-BEQ],t);
 			continue;
 		}
 		if(c==MOVETOREG){
@@ -439,10 +451,21 @@ void gen_code(FILE *f,struct IC *p,struct Var *v,zmax offset)
 		}
 
 		if(c==TEST){
+			load_reg(f,acc,&p->q1,p->typf2&NU);
+			emit(f,"\tor\tax\n");
+			continue;
 		} 
 		if(c==COMPARE&&isconst(q1)){
+			if(isreg(q2)){
+				emit(f,"\tsub\t%s, %d",regnames[p->q2.reg],p->q1.val.vmax);
+				continue;
+			}
 		}
 		if(c==COMPARE&&isconst(q2)){
+			if(isreg(q1)){
+				emit(f,"\tsub\t%s, %d",regnames[p->q1.reg],p->q2.val.vmax);
+				continue;
+			}
 		}
 		switch_IC(p);
 		if(c==CONVERT){
@@ -488,8 +511,7 @@ void gen_code(FILE *f,struct IC *p,struct Var *v,zmax offset)
 			int reg,jmp=0;
 			if((p->flags&(DREFOBJ|REG))==DREFOBJ) ierror(0);
 			else if((p->flags&(VAR|REG))==VAR){
-				//zerostack(f,voff(p));
-				//emit(f,"\tpop\t%s\t; stackoffset = %d\n",regnames[r],stackoffset);
+				emit(f,"\tmov\tax, [sp+%d]\n",voff(&p->q1));
 				//pop(4);
 			}
 			else if(p->flags&REG){
@@ -499,8 +521,15 @@ void gen_code(FILE *f,struct IC *p,struct Var *v,zmax offset)
 				/*if(ISFLOAT(t)){
 					emit(f,"%s%d",labprefix,addfpconst(p,t));
 				}else{*/
-					emit(f,"\tmov\t%s,%d\n",(&p->q1)->val);
+					emit(f,"\tcall %d\n",(&p->q1)->val);
 				//}
+			}else{
+				if(isextern(p->q1.v->storage_class)){
+					emit(f,"\tcall _%s\n",p->q1.v->identifier);
+				}else{
+					load_obj(f,&p->q1,POINTER, acc);
+					emit(f,"\tcall ax\n");
+				}
 			}
 			continue;
 		}if(c==ASSIGN){
@@ -569,7 +598,41 @@ void gen_code(FILE *f,struct IC *p,struct Var *v,zmax offset)
 			ierror(0);
 			continue;
 		}
+		if(c==LSHIFT){
+			if(isconst(q2)&&p->q2.val.vmax>2){
+				// in this case multiply is faster than lshift (mul ax, * => ~12 cycles, 8 cycles per lshift)
+				p->q2.val.vmax=(1<<p->q2.val.vmax);
+				c=MULT;
+			}else if(isconst(q2)){
+				if(p->q2.val.vmax==0) continue; // optimize out; does nothing
+				load_reg(f,acc,&p->q1,t);
+				if(p->q2.val.vmax==1){
+					emit(f,"\tshl ax\n");
+				}
+				if(p->q2.val.vmax==2){
+					emit(f,"\tshl ax\n");
+				}
+				store_reg(f,acc,&p->z,t);
+				continue;
+			}else
+				printf("left shift by variable not yet supported.");
+		}
+		if(c==RSHIFT){
+			if(isconst(q2)){
+				if(p->q2.val.vmax==0) continue; // optimize out; does nothing
+				load_reg(f,acc,&p->q1,t);
+				// todo: check for unsigned (idk how rn)
+				for(i=0;i<p->q2.val.vmax;i++){
+					emit(f,"\tsar ax\n");
+				}
+				store_reg(f,acc,&p->z,t);
+				continue;
+			}else
+				printf("right shift by variable not yet supported.");
+		}
 		if((c>=OR&&c<=AND)||c==ADD||c==SUB||c==MULT||c==ADDI2P||c==SUBIFP||c==SUBPFP||c==COMPARE){
+			// don't do shift operations here because they are a bit more... difficult.
+			//  > Even worse with floats and division (not yet supported by the CPU)
 			if(c==ADDI2P)c=ADD;
 			if(c==SUBIFP||c==SUBPFP||c==COMPARE)c=SUB;
 			char* s="add";
@@ -578,13 +641,33 @@ void gen_code(FILE *f,struct IC *p,struct Var *v,zmax offset)
 			else if(c==XOR)s="xor";
 			else if(c==AND)s="and";
 			else if(c==MULT)s="mul";
-			load_reg(f,acc,&p->q1,t);
-			load_reg(f,2,&p->q2,t); // load into BX
-			emit(f,"\t%s\tax, bx\n",s);
-			store_reg(f,acc,&p->z,t);
+			/*	this could be more easily written at the expense of less optimization.
+				without this if block this kind of unoptimized code could be generated:
+			
+					mov bx, 22
+					add ax, bx
+			
+				Could be replaced with:
+				
+					add ax, 22
+			*/
+			if(isconst(q2)){
+				load_reg(f,acc,&p->q1,t);
+				emit(f,"\t%s\tax, %d\n",s,p->q2.val);
+				store_reg(f,acc,&p->z,t);
+			}else if(isconst(q1)){
+				load_reg(f,acc,&p->q2,t); // load q2 bc q1 is a constant.
+				emit(f,"\t%s\tax, %d\n",s,p->q1.val);
+				store_reg(f,acc,&p->z,t);
+			}else{
+				load_reg(f,acc,&p->q1,t);
+				load_reg(f,2,&p->q2,t); // load into BX
+				emit(f,"\t%s\tax, bx\n",s);
+				store_reg(f,acc,&p->z,t);
+			}
 			continue;
 		}
-		printf("Error: norec #%d",c);
+		printf("Error: norec #%d\n",c);
 		pric2(stdout,p);
 		ierror(0);
 	}
@@ -601,9 +684,7 @@ void gen_code(FILE *f,struct IC *p,struct Var *v,zmax offset)
 }
 
 void gen_ds(FILE *f, zmax size, struct Typ *t){
-	
-	for(int i=0;i<zm2l(size);i++)
-		emit(f,"db 0"); // crude until assembler is updated.
+	emit(f,".zero %ld\n",zm2l(size));
 }
 void gen_align(FILE *f, zmax align){
 	
@@ -611,10 +692,10 @@ void gen_align(FILE *f, zmax align){
 }
 void gen_var_head(FILE *f, struct Var *v){
 	
-	emit(f,"section DATA");
+	emit(f,".section DATA\n");
 	if(v->storage_class==STATIC){
 		if(ISFUNC(v->vtyp->flags)) return;
-		emit(f,"\t.l%ld:",zm2l(v->offset));
+		emit(f,"\tl%ld:",zm2l(v->offset));
 		newobj=1;
 	}
 	if(v->storage_class==EXTERN){
@@ -653,7 +734,7 @@ void gen_dc(FILE *f, int t, struct const_list *p){
 		emit_obj(f,&p->tree->o,t&NU);
 		p->tree->o.flags=m;
 	}*/
-	int data=-1;
+	int data=p->val.vmax;
 	emit(f,"\t%s %d\n",str,data);
 }
 void init_db(FILE *f){
