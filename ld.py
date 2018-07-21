@@ -92,7 +92,7 @@ def evaluate(x):
     else:
         print("Error: '"+tokens[i]+"' is not a valid number, identifier, or symbol.")
 i=0
-
+print("Combining data...")
 if("-po" in args):
     print("Making python object file...")
     obj={"code":out,"lbl":names}
@@ -122,32 +122,4 @@ else:
         f.write(fout)
         f.close()
         print("Wrote "+ofn+".vhd and "+ofn+".coe ...")
-    if("-DW" in args):
-        print("attempting write on port 3...")
-        import serial
-        x=serial.Serial(port="COM3",baudrate=115200)
-        import time
-        time.sleep(3)
-        x.write(b'0')
-        for i in range(0,len(out)):
-            x.write(b'3')
-            x.write(bytes([0,0,0,i,out[i]]))
-            time.sleep(0.1)
-            print(str(int((i+1)/(len(out)/100)))+"% complete")
-        x.write(b'0')
-        print("verifying...")
-        for i in range(0,len(out)):
-            while x.in_waiting:
-                x.read()
-            x.write(b'1')
-            x.write(bytes([0,0,0,i]))
-            tmp=x.read()
-            if(ord(tmp)!=out[i]):
-                print("Error while verifying.")
-                print("@"+str(i))
-                print("="+str(out[i]))
-                print(ord(tmp))
-            time.sleep(0.1)
-            print(str(int((i+1)/(len(out)/100)))+"% complete")
-        print("wrote output format SERIAL...")
 print("done.")

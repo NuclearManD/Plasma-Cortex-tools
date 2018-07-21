@@ -1,0 +1,120 @@
+C:\Users\Dylanbrophy\Documents\GitHub\Plasma-Cortex-tools>build
+----- BUILDING TOOLS -----
+111 INFO: PyInstaller: 3.3.1
+111 INFO: Python: 3.6.4
+112 INFO: Platform: Windows-7-6.1.7601-SP1
+113 INFO: wrote C:\Users\Dylanbrophy\Documents\GitHub\Plasma-Cortex-tools\as.spe
+c
+115 INFO: UPX is not available.
+116 INFO: Extending PYTHONPATH with paths
+['C:\\Users\\Dylanbrophy\\Documents\\GitHub\\Plasma-Cortex-tools',
+ 'C:\\Users\\Dylanbrophy\\Documents\\GitHub\\Plasma-Cortex-tools']
+117 INFO: checking Analysis
+120 INFO: Building because C:\Users\Dylanbrophy\Documents\GitHub\Plasma-Cortex-t
+ools\as.py changed
+120 INFO: Initializing module dependency graph...
+122 INFO: Initializing module graph hooks...
+125 INFO: Analyzing base_library.zip ...
+6093 INFO: running Analysis out00-Analysis.toc
+6096 INFO: Adding Microsoft.Windows.Common-Controls to dependent assemblies of f
+inal executable
+  required by C:\Users\Dylanbrophy\AppData\Local\Programs\Python\Python36-32\pyt
+hon.exe
+7396 INFO: Caching module hooks...
+7407 INFO: Analyzing C:\Users\Dylanbrophy\Documents\GitHub\Plasma-Cortex-tools\a
+s.py
+7761 INFO: Loading module hooks...
+7762 INFO: Loading module hook "hook-encodings.py"...
+7880 INFO: Loading module hook "hook-pydoc.py"...
+7882 INFO: Loading module hook "hook-xml.py"...
+8421 INFO: checking Tree
+8425 INFO: Looking for ctypes DLLs
+8447 INFO: Analyzing run-time hooks ...
+8459 INFO: Looking for dynamic libraries
+8617 INFO: Looking for eggs
+8617 INFO: Using Python library C:\Users\Dylanbrophy\AppData\Local\Programs\Pyth
+on\Python36-32\python36.dll
+8617 INFO: Found binding redirects:
+[]
+8621 INFO: Warnings written to C:\Users\Dylanbrophy\Documents\GitHub\Plasma-Cort
+ex-tools\build\as\warnas.txt
+8724 INFO: Graph cross-reference written to C:\Users\Dylanbrophy\Documents\GitHu
+b\Plasma-Cortex-tools\build\as\xref-as.html
+8742 INFO: checking PYZ
+8745 INFO: Building because toc changed
+8745 INFO: Building PYZ (ZlibArchive) C:\Users\Dylanbrophy\Documents\GitHub\Plas
+ma-Cortex-tools\build\as\out00-PYZ.pyz
+10353 INFO: Building PYZ (ZlibArchive) C:\Users\Dylanbrophy\Documents\GitHub\Pla
+sma-Cortex-tools\build\as\out00-PYZ.pyz completed successfully.
+10368 INFO: checking PKG
+10370 INFO: Building because toc changed
+10370 INFO: Building PKG (CArchive) out00-PKG.pkg
+12236 INFO: Building PKG (CArchive) out00-PKG.pkg completed successfully.
+12241 INFO: Bootloader C:\Users\Dylanbrophy\AppData\Local\Programs\Python\Python
+36-32\lib\site-packages\PyInstaller\bootloader\Windows-32bit\run.exe
+12241 INFO: checking EXE
+12243 INFO: Rebuilding out00-EXE.toc because as.exe missing
+12243 INFO: Building EXE from out00-EXE.toc
+12243 INFO: Appending archive to EXE C:\Users\Dylanbrophy\Documents\GitHub\Plasm
+a-Cortex-tools\dist\as.exe
+12250 INFO: Building EXE from out00-EXE.toc completed successfully.
+98 INFO: PyInstaller: 3.3.1
+98 INFO: Python: 3.6.4
+99 INFO: Platform: Windows-7-6.1.7601-SP1
+100 INFO: wrote C:\Users\Dylanbrophy\Documents\GitHub\Plasma-Cortex-tools\ld.spe
+c
+101 INFO: UPX is not available.
+103 INFO: Extending PYTHONPATH with paths
+['C:\\Users\\Dylanbrophy\\Documents\\GitHub\\Plasma-Cortex-tools',
+ 'C:\\Users\\Dylanbrophy\\Documents\\GitHub\\Plasma-Cortex-tools']
+103 INFO: checking Analysis
+119 INFO: checking PYZ
+130 INFO: checking PKG
+134 INFO: Bootloader C:\Users\Dylanbrophy\AppData\Local\Programs\Python\Python36
+-32\lib\site-packages\PyInstaller\bootloader\Windows-32bit\run.exe
+134 INFO: checking EXE
+135 INFO: Rebuilding out00-EXE.toc because ld.exe missing
+135 INFO: Building EXE from out00-EXE.toc
+135 INFO: Appending archive to EXE C:\Users\Dylanbrophy\Documents\GitHub\Plasma-
+Cortex-tools\dist\ld.exe
+141 INFO: Building EXE from out00-EXE.toc completed successfully.
+        1 dir(s) moved.
+----- BUILDING CROSS COMPILER -----
+gcc -std=c9x -g -DHAVE_AOS4  frontend/vc.c -o bin/vc -lm
+
+gcc -std=c9x -g -DHAVE_AOS4  datatypes/dtgen.c -o bin/dtgen -Idatatypes -lm
+
+gcc -std=c9x -g -DHAVE_AOS4  datatypes/dtgen.c -o bin/dtgen -Idatatypes -lm
+
+gcc -std=c9x -g -DHAVE_AOS4  datatypes/dtgen.c -o bin/dtgen -Idatatypes -lm
+
+gcc -std=c9x -g -DHAVE_AOS4  datatypes/dtgen.c -o bin/dtgen -Idatatypes -lm
+
+gcc -std=c9x -g -DHAVE_AOS4  datatypes/dtgen.c -o bin/dtgen -Idatatypes -lm
+
+gcc -std=c9x -g -DHAVE_AOS4  datatypes/dtgen.c -o bin/dtgen -Idatatypes -lm
+
+gcc -std=c9x -g -DHAVE_AOS4  -lm machines/plasma/opt.o machines/plasma/av.o mach
+ines/plasma/rd.o machines/plasma/regs.o  machines/plasma/flow.o machines/plasma/
+cse.o machines/plasma/cp.o machines/plasma/loop.o  machines/plasma/alias.o machi
+nes/plasma/main.o machines/plasma/vars.o machines/plasma/declaration.o  machines
+/plasma/parse_expr.o machines/plasma/type_expr.o machines/plasma/ic.o  machines/
+plasma/machine.o machines/plasma/statements.o  machines/plasma/supp.o machines/p
+lasma/dt.o  machines/plasma/assert.o machines/plasma/cpp.o machines/plasma/hash.
+o  machines/plasma/lexer.o machines/plasma/macro.o machines/plasma/mem.o  machin
+es/plasma/eval.o -o bin/vbccplasma
+
+        1 file(s) copied.
+        1 file(s) copied.
+----- BUILDING CSTDLIB -----
+Plasma Cortex assembler, Copyright 2018 Dylan Brophy
+Assembling c_library\crt0.asm...
+Making python object file: c_library\crt0.po ...
+done.
+Plasma Cortex assembler, Copyright 2018 Dylan Brophy
+Assembling c_library\stdio.asm...
+Making python object file: c_library\stdio.po ...
+done.
+----- CLEANING UP -----
+----- BUILT -----
+Press any key to continue . . .

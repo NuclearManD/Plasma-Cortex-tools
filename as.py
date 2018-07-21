@@ -1,5 +1,5 @@
 # based on old NGX series assembler.
-print("Plasma Cortex assembler")
+print("Plasma Cortex assembler, Copyright 2018 Dylan Brophy")
 import sys
 args=sys.argv
 if(len(args)==1):
@@ -9,6 +9,7 @@ try:
     ofn=ofn[:ofn.index('.')]
 except:
     pass
+print("Assembling "+args[1]+"...")
 file=open(args[1])
 filedat=file.read()
 file.close()
@@ -128,19 +129,32 @@ while i<len(tokens):
         elif tokens[i]==".global":
             i+=1
             glbls.append(tokens[i])
+        elif tokens[i]==".equ":
+            i+=1
+            qzx=tokens[i]
+            i+=1
+            m=tokens[i]
+            ln=tklines[i]
+            while len(tklines)>i+1 and tklines[i+1]==ln:
+                i+=1
+                m+=tokens[i]
+            m=m.replace('$',str(location))
+            for j in names:
+                m=m.replace(j,str(names[j]))
+            names[qzx]=eval(m)
         elif tokens[i]==".size":
             i+=1
             qzx=tokens[i]
             i+=1
             m=tokens[i]
             ln=tklines[i]
-            while tklines[i+1]==ln:
+            while len(tklines)>i+1 and tklines[i+1]==ln:
                 i+=1
                 m+=tokens[i]
             m=m.replace('$',str(location))
             for j in names:
                 m=m.replace(j,str(names[j]))
-            print(eval(m))
+            #print(eval(m))
         elif tokens[i]=='"':
             i+=1
             location+=len(tokens[i])
@@ -228,20 +242,27 @@ while i<len(tokens):
         #ignore for now
     elif tokens[i]==".global":
         i+=1
-        glbls.append(tokens[i])
+    elif tokens[i]==".equ":
+        i+=1
+        qzx=tokens[i]
+        i+=1
+        m=tokens[i]
+        ln=tklines[i]
+        while len(tklines)>i+1 and tklines[i+1]==ln:
+            i+=1
     elif tokens[i]==".size":
         i+=1
         qzx=tokens[i]
         i+=1
         m=tokens[i]
         ln=tklines[i]
-        while tklines[i+1]==ln:
+        while len(tklines)>i+1 and tklines[i+1]==ln:
             i+=1
             m+=tokens[i]
         m=m.replace('$',str(location))
         for j in names:
             m=m.replace(j,str(names[j]))
-        print(eval(m))
+        #print(eval(m))
     elif tokens[i]=="db":
         i=i+1
         out.append(to_int(tokens[i]))
@@ -381,7 +402,7 @@ while i<len(tokens):
 if(lsloc!=location):
     print("WARNING: stages 1 and 2 found differing byte counts "+str(lsloc)+" and "+str(location)+"!!")
 if("-po" in args):
-    print("Making python object file...")
+    print("Making python object file: "+ofn+".po ...")
     obj={"code":out,"lbl":names}
     f=open(ofn+'.po','w')
     f.write(str(obj))

@@ -7,7 +7,7 @@ extern void printf(const char * format, ...);
 extern int remove(const char *filename);
 extern int rename(const char *old_filename, const char *new_filename);
 extern int sprintf(char *str, const char *format, ...);
-extern int getchar(void);
+extern int getchar();
 extern char *gets(char *str);
 
 #endif

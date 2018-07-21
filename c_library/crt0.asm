@@ -1,4 +1,4 @@
-.org 0
+.org 0x10000
 .section CODE
 .global _start
 _start:

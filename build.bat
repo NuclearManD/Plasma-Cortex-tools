@@ -14,6 +14,7 @@ copy vbcc\bin\vc.exe bin-windows\vc.exe
 copy vbcc\bin\vbccplasma.exe bin-windows\vbccplasma.exe
 echo ----- BUILDING CSTDLIB -----
 bin-windows\as c_library\crt0.asm -po
+bin-windows\as c_library\stdio.asm -po
 echo ----- CLEANING UP -----
 del ld.spec
 del as.spec
