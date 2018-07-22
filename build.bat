@@ -1,8 +1,8 @@
 @echo off
 echo ----- BUILDING TOOLS -----
-python pyinstaller.py as.py -F
-rem python pyinstaller.py cpp.py -F
-python pyinstaller.py ld.py -F
+python pyinstaller.py as.py -F -n asplasma
+rem python pyinstaller.py cpp.py -F -n cppplasma
+python pyinstaller.py ld.py -F -n ldplasma
 rmdir bin-windows /S /Q
 move .\dist bin-windows
 echo ----- BUILDING CROSS COMPILER -----
@@ -16,8 +16,8 @@ echo ----- BUILDING CSTDLIB -----
 bin-windows\as c_library\crt0.asm -po
 bin-windows\as c_library\stdio.asm -po
 echo ----- CLEANING UP -----
-del ld.spec
-del as.spec
+del ldplasma.spec
+del asplasma.spec
 
 echo ----- BUILT -----
 pause
