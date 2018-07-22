@@ -106,14 +106,19 @@ static void push(long l)
 	if(stackoffset<maxpushed) maxpushed=stackoffset;
 	if(-maxpushed>stack) stack=-maxpushed;
 }
+int gen_already=0;
 static void function_top(FILE *f,struct Var *v,long offset)
 /*	erzeugt Funktionskopf											 */
 {
+	if(gen_already==0){
+		gen_already=1;
+		emit(f, ".org 0x10080\n");
+	}
 	//emit(f,"\t;function_top\n");
 	int i;
-	emit(f,"# offset=%ld\n",offset);
+	//emit(f,"# offset=%ld\n",offset);
 	have_frame=0;stack_valid=1;stack=0;
-	if(section!=CODE){emit(f,codename);if(f) section=CODE;}
+	//if(section!=CODE){emit(f,codename);if(f) section=CODE;}
 	if(v->storage_class==EXTERN){
 		if((v->flags&(INLINEFUNC|INLINEEXT))!=INLINEFUNC)
 			emit(f,"\t.global\t%s\n",v->identifier);
@@ -209,11 +214,11 @@ static void function_bottom(FILE *f,struct Var *v,long offset)
 	}
 	emit(f,"\tret\n");
 	if(v->storage_class==EXTERN){
-		emit(f,"\t.type\t%s%s,@function\n",idprefix,v->identifier);
-		emit(f,"\t.size\t%s%s,$-%s%s\n",idprefix,v->identifier,idprefix,v->identifier);
+		//emit(f,"\t.type\t%s%s,@function\n",idprefix,v->identifier);
+		//emit(f,"\t.size\t%s%s,$-%s%s\n",idprefix,v->identifier,idprefix,v->identifier);
 	}else{
-		emit(f,"\t.type\t%s%ld,@function\n",labprefix,zm2l(v->offset));
-		emit(f,"\t.size\t%s%ld,$-%s%ld\n",labprefix,zm2l(v->offset),labprefix,zm2l(v->offset));
+		//emit(f,"\t.type\t%s%ld,@function\n",labprefix,zm2l(v->offset));
+		//emit(f,"\t.size\t%s%ld,$-%s%ld\n",labprefix,zm2l(v->offset),labprefix,zm2l(v->offset));
 	}
 	if(stack_check)
 		emit(f,"\t.equ\t%s%d,%ld\n",labprefix,stackchecklabel,offset-maxpushed);
@@ -221,7 +226,7 @@ static void function_bottom(FILE *f,struct Var *v,long offset)
 		if(!v->fi) v->fi=new_fi();
 		v->fi->flags|=ALL_STACK;
 		v->fi->stack1=l2zm(stack+offset);
-		emit(f,"# stacksize=%ld\n",stack+offset);
+		//emit(f,"# stacksize=%ld\n",stack+offset);
 		emit(f,"\t.equ\t%s__stack_%s,%ld\n",idprefix,v->identifier,stack+offset);
 	}
 }
@@ -698,7 +703,7 @@ void gen_var_head(FILE *f, struct Var *v){
 		newobj=1;
 	}
 	if(v->storage_class==EXTERN){
-		emit(f,"\tglobal\t_%s\n",v->identifier);
+		emit(f,"\t.global\t_%s\n",v->identifier);
 		if(v->flags&(DEFINED|TENTATIVE)){
 			emit(f,"\talign\t4\n_%s:\n",v->identifier);
 		}
@@ -708,8 +713,15 @@ void gen_dc(FILE *f, int t, struct const_list *p){
 	
 	int type=t&NQ;
 	char *str;
-	if(type==CHAR) str="\tdb\t";
-	else if(type==SHORT) str="\tdw\t";
+	int data=p->val.vmax;
+	if(type==CHAR){
+		str="\tdb\t";
+		data&=255;
+	}
+	else if(type==SHORT){
+		str="\tdw\t";
+		data&=65535;
+	}
 	else str="\tdd\t";
 	/*if(!p->tree){
 		if(ISFLOAT(t)){
@@ -733,7 +745,6 @@ void gen_dc(FILE *f, int t, struct const_list *p){
 		emit_obj(f,&p->tree->o,t&NU);
 		p->tree->o.flags=m;
 	}*/
-	int data=p->val.vmax;
 	emit(f,"\t%s %d\n",str,data);
 }
 void init_db(FILE *f){

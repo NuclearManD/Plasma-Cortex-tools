@@ -1,5 +1,6 @@
 # based on old NGX series assembler, then Plasma Cortex assembler, now it is the linker.
-import argparse, sys
+import argparse, sys, os
+#sys.path.append("C:\\PlasmaCortex\\c_lib")
 args = argparse.ArgumentParser(description='Plasma Cortex Linker copyright Dylan Brophy 2018.', prog='ld')
 args.add_argument('-po', dest='pyObj', action='store_const', const=True, default=False, help='Generate a Python Object file instead of a binary file')
 args.add_argument('-coe', dest='coe', action='store_const', const=True, default=False, help='Generate a COE file')
@@ -18,62 +19,16 @@ if(ofn=='a'):
         ofn="a.po"
     else:
         ofn="a.bin"
-
-fdat_upper="""library IEEE;
-use IEEE.STD_LOGIC_1164.ALL;
-use IEEE.NUMERIC_STD.ALL;
-
-entity biosram is
-port (
-		 clka  : IN STD_LOGIC;
-		 ena   : IN STD_LOGIC;
-		 wea   : IN STD_LOGIC;
-		 addra : IN STD_LOGIC_VECTOR(13 DOWNTO 0);
-		 dina  : IN STD_LOGIC_VECTOR(7 DOWNTO 0);
-		 douta : OUT STD_LOGIC_VECTOR(7 DOWNTO 0)
-     );
-end biosram;
-
-architecture Behavioral of biosram is
-
-	--Declaration of type and signal of a 512 element RAM
-	--with each element being 8 bit wide.
-	type ram_t is array (0 to """
-fdat_mid=""") of std_logic_vector(7 downto 0);
-	signal ram : ram_t := ("""
-fdat_lower=""");
-	signal data_o : std_logic_vector(7 downto 0);
-	signal adr    : std_logic_vector(5 downto 0);
-begin
-
-	--process for read and write operation.
-	ram(to_integer(unsigned(addra))) <= dina when wea='1' and ena='1';
-	douta <= ram(to_integer(unsigned(addra))) when wea='0' and ena='1';
-
-end Behavioral;"""
-
 out_names={}
 out_code=[]
-
-def to_int(s):
-    #exec("y="+s)
-    try:
-        return eval(s)
-    except:
-        if(s[0]=="'" and s[2]=="'"):
-            return ord(s[1])
-def is_int(s):
-    try: 
-        if(s[0]=="'" and s[2]=="'"):
-            return True
-        return type(eval(s))==int
-    except:
-        return False
+location=0
 def wr32(x):
-    out_code.append(x>>24)
-    out_code.append((x>>16)&255)
-    out_code.append((x>>8)&255)
-    out_code.append(x&255)
+    global location
+    out_code[location]=(((x>>24)+256)&255)
+    out_code[location+1]=((x>>16)&255)
+    out_code[location+2]=((x>>8)&255)
+    out_code[location+3]=(x&255)
+    location+=4
 print("Reading files...")
 in_names=[]
 in_code=[]
@@ -81,7 +36,10 @@ in_size=[]
 num_files=0
 for i in args.fns:
     try:
-        f=open(i)
+        j=i
+        if(not os.path.exists(i)):
+            j="C:\\PlasmaCortex\\c_lib\\"+j
+        f=open(j)
         in_raw=eval(f.read())
         in_names.append(in_raw["lbl"])
         in_code.append(in_raw["code"])
@@ -105,6 +63,10 @@ for i in range(num_files):
     for j in range(i):
         if(min(sum(in_size[i])-in_size[j][0],sum(in_size[j])-in_size[i][0])>0):
             print("Fatal: code collision between files '"+args.fns[i]+"' and '"+args.fns[j]+"'.")
+            fatal=True
+    """if(in_size[i][1]!=len(in_code[i])):
+        print("Fatal: PO File "+args.fns[i]+" code size mismatch.")
+        fatal=True"""
     if(in_size[i][1]>0):
         minspot=min(minspot, in_size[i][0])
         maxspot=max(maxspot, sum(in_size[i]))
@@ -112,11 +74,20 @@ if(fatal):
     print("Quitting due to above errors!")
     sys.exit(-2)
 totalSize=maxspot-minspot
+if pyObj:
+    out_code=[-1]*totalSize
+else:
+    out_code=[0]*totalSize
+print("code size: "+str(totalSize)+" bytes.")
+print("offset: "+str(minspot))
 print("Merging code...")
 for i in range(num_files):
-    start=in_size[i][0]
-    for j in range(start, start+in_size[i][1]):
-        bte=in_code[i][j-start]
+    location=in_size[i][0]
+    location-=minspot
+    j=0
+    off=0
+    while j < in_size[i][1]-off:
+        bte=in_code[i][j]
         if(not pyObj and type(bte)==str):
             try:
                 wr32(out_names[bte])
@@ -124,7 +95,19 @@ for i in range(num_files):
                 print("Error: label '"+bte+"' not found in provided object files.")
                 fatal=True
         else:
-            out_code.append(bte)
+            if(location>=len(out_code)):
+                print("ERROR: Linker bug found!")
+                print("out_code length is "+str(len(out_code)))
+                print("location: "+str(location))
+                print("Current file: #"+str(i)+", aka "+args.fns[i])
+                print("Start location: "+str(in_size[i][0]-minspot))
+                fatal=True
+                break
+            out_code[location]=(bte)
+            location+=1
+        j+=1
+        if( type(bte)==str):
+            off+=3
 if(fatal):
     print("Quitting due to above errors!")
     sys.exit(-3)
@@ -136,17 +119,20 @@ if(pyObj):
     f.close()
 elif(args.coe):
     COE="memory_initialization_radix=16;\nmemory_initialization_vector=\n"
-    for i in out:
+    for i in out_code:
         COE+=(hex(i)[2:]).zfill(2)+',\n'
     fout=COE[:len(COE)-2]+';'
-    f=open(ofn+".coe",'w')
+    f=open(ofn,'w')
     f.write(fout)
     f.close()
     print("Wrote "+ofn+" ...")
 else:
     print("Writing binary file...")
     f=open(ofn,'wb')
-    f.write(bytes(out))
+    for i in out_code:
+        if i<0 or i>255:
+            print("Error: code contains invalid value "+str(i))
+    f.write(bytes(out_code))
     f.close()
-    print(str(len(out))+" bytes in size.")
+    print(str(len(out_code))+" bytes in size.")
 print("done.")

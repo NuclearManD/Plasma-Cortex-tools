@@ -13,8 +13,8 @@ cd ..
 copy vbcc\bin\vc.exe bin-windows\vc.exe
 copy vbcc\bin\vbccplasma.exe bin-windows\vbccplasma.exe
 echo ----- BUILDING CSTDLIB -----
-bin-windows\as c_library\crt0.asm -po
-bin-windows\as c_library\stdio.asm -po
+bin-windows\asplasma c_library\crt0.asm -po
+bin-windows\asplasma c_library\stdio.asm -po
 echo ----- CLEANING UP -----
 del ldplasma.spec
 del asplasma.spec
