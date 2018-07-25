@@ -14,38 +14,6 @@ print("Assembling "+args[1]+"...")
 file=open(args[1])
 filedat=file.read()
 file.close()
-fdat_upper="""library IEEE;
-use IEEE.STD_LOGIC_1164.ALL;
-use IEEE.NUMERIC_STD.ALL;
-
-entity biosram is
-port (
-		 clka  : IN STD_LOGIC;
-		 ena   : IN STD_LOGIC;
-		 wea   : IN STD_LOGIC;
-		 addra : IN STD_LOGIC_VECTOR(13 DOWNTO 0);
-		 dina  : IN STD_LOGIC_VECTOR(7 DOWNTO 0);
-		 douta : OUT STD_LOGIC_VECTOR(7 DOWNTO 0)
-     );
-end biosram;
-
-architecture Behavioral of biosram is
-
-	--Declaration of type and signal of a 512 element RAM
-	--with each element being 8 bit wide.
-	type ram_t is array (0 to """
-fdat_mid=""") of std_logic_vector(7 downto 0);
-	signal ram : ram_t := ("""
-fdat_lower=""");
-	signal data_o : std_logic_vector(7 downto 0);
-	signal adr    : std_logic_vector(5 downto 0);
-begin
-
-	--process for read and write operation.
-	ram(to_integer(unsigned(addra))) <= dina when wea='1' and ena='1';
-	douta <= ram(to_integer(unsigned(addra))) when wea='0' and ena='1';
-
-end Behavioral;"""
 split=False
 com=False
 tmp=""
@@ -225,12 +193,12 @@ def wr32(x):
 def evaluate(x):
     if is_int(x):
         wr32(to_int(x))
+    elif x=='$':
+        wr32(location)
     elif("-po" in args):
         emit(x)
     elif(x in names.keys()):
         wr32(names[x])
-    elif x=='$':
-        wr32(location)
     else:
         errormsg("'"+tokens[i]+"' is not a valid number, identifier, or symbol.")
 i=0
