@@ -165,10 +165,14 @@ while i<len(tokens):
                 location+=4
             i+=2
         elif tokens[i]=="out":
-            location+=5
+            if tokens[i+1]!='dx':
+                location+=4
+            location+=1
             i+=2
         elif tokens[i]=="in":
-            location+=5
+            if tokens[i+2]!='dx':
+                location+=4
+            location+=1
             i+=2
         elif tokens[i]=="db":
             location+=1
@@ -361,34 +365,29 @@ while i<len(tokens):
         elif tokens[i]=="out":
             if is_int(tokens[i+2]):
                 i+=2
-                emit(39)
-                emit(2)
-                emit(to_int(tokens[i])&255)
+                emit(0x69)
                 evaluate(tokens[i-1]);
+                location+=5
+            elif tokens[i+2]=='dx':
+                i+=2
+                emit(0x6B)
+                location+=1
             else:
-                emit(40)
-                emit(2)
-                i+=1
-                try:
-                    emit(regs.index(tokens[i+1]))
-                except:
-                    errormsg("'"+tokens[i+1]+"' is not a valid 32-bit register or number constant.")
-                i+=1
-                evaluate(tokens[i-1])
-            location+=5
+                i+=2
+                errormsg("invalid opcode! out operand #2 cannot be '"+tokens[i]+"'.")
         elif tokens[i]=="in":
-            emit(38)
-            emit(2)
-            i+=1
-            try:
-                emit(regs.index(tokens[i]))
-            except:
-                errormsg("'"+tokens[i]+"' is not a valid 32-bit register or number constant.")
-            i+=1
-            evaluate(tokens[i])
-            location+=5
-        else:
-            errormsg("invalid:"+tokens[i])
+            if is_int(tokens[i+1]):
+                i+=2
+                emit(0x68)
+                evaluate(tokens[i]);
+                location+=5
+            elif tokens[i+1]=='dx':
+                i+=2
+                emit(0x6A)
+                location+=1
+            else:
+                i+=2
+                errormsg("invalid opcode! out operand #2 cannot be '"+tokens[i]+"'.")
     i+=1
 if(lsloc!=location):
     print("WARNING: stages 1 and 2 found differing byte counts "+str(lsloc)+" and "+str(location)+"!!")
