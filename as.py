@@ -191,6 +191,8 @@ def wr32(x):
     emit((x>>8)&255)
     emit(x&255)
 def evaluate(x):
+    if x in regs:
+        errormsg("Internal attempt to interpret register as label")
     if is_int(x):
         wr32(to_int(x))
     elif x=='$':
