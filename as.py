@@ -368,26 +368,26 @@ while i<len(tokens):
                 emit(0x69)
                 evaluate(tokens[i-1]);
                 location+=5
-            elif tokens[i+2]=='dx':
+            elif tokens[i+1]=='dx':
                 i+=2
                 emit(0x6B)
                 location+=1
             else:
                 i+=2
-                errormsg("invalid opcode! out operand #2 cannot be '"+tokens[i]+"'.")
+                errormsg("invalid opcode! out operand #2 cannot be '"+tokens[i-1]+"'.")
         elif tokens[i]=="in":
             if is_int(tokens[i+1]):
                 i+=2
                 emit(0x68)
                 evaluate(tokens[i]);
                 location+=5
-            elif tokens[i+1]=='dx':
+            elif tokens[i+2]=='dx':
                 i+=2
                 emit(0x6A)
                 location+=1
             else:
                 i+=2
-                errormsg("invalid opcode! out operand #2 cannot be '"+tokens[i]+"'.")
+                errormsg("invalid opcode! in operand #1 cannot be '"+tokens[i]+"'.")
     i+=1
 if(lsloc!=location):
     print("WARNING: stages 1 and 2 found differing byte counts "+str(lsloc)+" and "+str(location)+"!!")
