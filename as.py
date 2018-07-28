@@ -49,7 +49,7 @@ if len(tmp)>0:
     tklines.append(linenum)
 
 regs=['ax','bx','cx','dx','si','di','sp','pc']
-math_ops={'add':0x80, 'sub':0x81, 'mul':0x82, 'div':0x83, 'xor':0x85, 'and':0x86, 'or':0x87, 'shl':0xC0,'shr':0xC1,'sar':0xC2,'abs':0xC3,'not':0xC4}
+math_ops={'add':0x80, 'sub':0x81, 'mul':0x82, 'div':0x83, 'xor':0x85, 'and':0x86, 'or':0x87, 'shl':0xC0,'shr':0xC1,'sar':0xC2,'abs':0xC3,'not':0xC4,'inc':0xC6,'dec':0xC7}
 
 names={}
 glbls=[]
@@ -158,11 +158,14 @@ while i<len(tokens):
             location+=5
             i+=1
         elif tokens[i]=="mov":
-            location+=1
-            if(not('[' in tokens[i+1] or '[' in tokens[i+2])):
-                pass #location+=4
-            elif(not tokens[i+2] in regs):
-                location+=4
+            if('[' in tokens[i+1]):
+                location+=1
+            elif('[' in tokens[i+2]):
+                location+=1
+            elif tokens[i+2] in regs:
+                location+=1
+            elif(can_eval(tokens[i+2])):
+                location+=5
             i+=2
         elif tokens[i]=="out":
             if tokens[i+1]!='dx':
@@ -390,7 +393,7 @@ while i<len(tokens):
                 errormsg("invalid opcode! in operand #1 cannot be '"+tokens[i]+"'.")
     i+=1
 if(lsloc!=location):
-    print("WARNING: stages 1 and 2 found differing byte counts "+str(lsloc)+" and "+str(location)+"!!")
+    print("WARNING: stages 1 and 2 found differing byte counts "+str(lsloc-base)+" and "+str(location-base)+"!!")
 if("-po" in args):
     print("Making python object file: "+ofn+".po ...")
     obj={"code":out,"lbl":names,"size":[base,location-base]}
