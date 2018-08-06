@@ -158,7 +158,11 @@ while i<len(tokens):
             location+=5
             i+=1
         elif tokens[i]=="mov":
-            if('[' in tokens[i+1]):
+            if('[sp+' in tokens[i+1] or '[sp-' in tokens[i+1]):
+                location+=3
+            elif('[sp+' in tokens[i+2] or '[sp-' in tokens[i+2]):
+                location+=3
+            elif('[' in tokens[i+1]):
                 location+=1
             elif('[' in tokens[i+2]):
                 location+=1
@@ -335,33 +339,63 @@ while i<len(tokens):
             evaluate(tokens[i])
             location+=5
         elif tokens[i]=="mov":
-            if('[' in tokens[i+1]):
+            if('[sp+' in tokens[i+1] or '[sp-' in tokens[i+1]):
+                try:
+                    emit(0x88|regs.index(tokens[i+2][1:3]))
+                    offset_str=tokens[i+1][3:-1]
+                    offset=0
+                    if(offset_str[0]=='-'):
+                        offset=2**16 + eval(offset_str)
+                    else:
+                        offset=eval(offset_str[1:])
+                    emit((offset>>8)&255)
+                    emit(offset&255)
+                    location+=3
+                    tokens+=2
+                except:
+                    errormsg("'"+tokens[i+2]+"' is not a valid general purpose 32-bit register.")
+            elif('[sp+' in tokens[i+2] or '[sp-' in tokens[i+2]):
+                try:
+                    emit(0x88|regs.index(tokens[i+1][1:3]))
+                    offset_str=tokens[i+2][3:-1]
+                    offset=0
+                    if(offset_str[0]=='-'):
+                        offset=2**16 + eval(offset_str)
+                    else:
+                        offset=eval(offset_str[1:])
+                    emit((offset>>8)&255)
+                    emit(offset&255)
+                    location+=3
+                    tokens+=2
+                except:
+                    errormsg("'"+tokens[i+2]+"' is not a valid general purpose 32-bit register.")
+            elif('[' in tokens[i+1]):
                 i+=2
                 try:
                     emit(0x88|regs.index(tokens[i-1][1:3])|(regs.index(tokens[i])<<4))
                 except:
-                    errormsg("'"+tokens[i-1]+'/'+tokens[i]+"' is not a valid 32-bit register.")
+                    errormsg("'"+tokens[i-1]+'/'+tokens[i]+"' is not a valid general purpose 32-bit register.")
                 location+=1
             elif('[' in tokens[i+2]):
                 i+=2
                 try:
                     emit(0x80|regs.index(tokens[i][1:3])|(regs.index(tokens[i-1])<<4))
                 except:
-                    errormsg("'"+tokens[i-1]+'/'+tokens[i]+"' is not a valid 32-bit register.")
+                    errormsg("'"+tokens[i-1]+'/'+tokens[i]+"' is not a valid general purpose 32-bit register.")
                 location+=1
             elif tokens[i+2] in regs:
                 i+=2
                 try:
                     emit(regs.index(tokens[i-1])|(regs.index(tokens[i])<<4))
                 except:
-                    errormsg("'"+tokens[i-1]+'/'+tokens[i]+"' is not a valid 32-bit register.")
+                    errormsg("'"+tokens[i-1]+'/'+tokens[i]+"' is not a valid register.")
                 location+=1
             elif(can_eval(tokens[i+2])):
                 i+=1
                 try:
                     emit(0xF8|regs.index(tokens[i]))
                 except:
-                    errormsg("'"+tokens[i]+"' is not a valid 32-bit register.")
+                    errormsg("'"+tokens[i]+"' is not a valid register.")
                 i+=1
                 evaluate(tokens[i])
                 location+=5
