@@ -50,8 +50,8 @@ struct Typ *regtype[MAXR+1];
 
 struct reg_handle empty_reg_handle={0};
 
-int g_flags[MAXGF]={0};
-char *g_flags_name[MAXGF]={"--"};
+int g_flags[MAXGF]={STRINGFLAG};
+char *g_flags_name[MAXGF]={"off"};
 union ppi g_flags_val[MAXGF];
 
 /*
@@ -110,9 +110,13 @@ int gen_already=0;
 static void function_top(FILE *f,struct Var *v,long offset)
 /*	erzeugt Funktionskopf											 */
 {
+	char* asm_top="0x10080"; /* leave 128 bytes for crt0.po */
 	if(gen_already==0){
+		if(g_flags[0]&USEDFLAG){
+			asm_top=g_flags_val[0].p;
+		}
 		gen_already=1;
-		emit(f, ".org 0x10080\n");
+		emit(f, ".org %s\n", asm_top);
 	}
 	//emit(f,"\t;function_top\n");
 	int i;
@@ -182,7 +186,7 @@ static void store_obj(FILE *f,struct obj *p,int t, int r)
 			emit(f,"+%d\n",zm2l(p->val.vmax));
 			emit(f,"\tmov\t[di], %s\n",regnames[r]);
 		}else if(isstatic(p->v->storage_class)){
-			emit(f,"\tmov\tdi, l%d\n",p->v->offset);
+			emit(f,"\tmov\tdi, %u\n",p->v->offset);
 			emit(f,"\tmov\t[di], %s\n",regnames[r]);
 		}else
 			emit(f,"\tmov\t[sp+%d], %s\n",voff(p),regnames[r]);
