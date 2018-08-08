@@ -82,6 +82,32 @@ def can_eval(x):
         return True
     else:
         return False
+def errormsg(string):
+    print("Error on line "+str(tklines[i])+": "+string)
+def parseint(x, allow_ref=True):
+    if is_int(x):
+        return(to_int(x))
+    elif x=='$':
+        return(location)
+    elif("-po" in args and allow_ref):
+        return (x)
+    elif(x in names.keys()):
+        return (names[x])
+    else:
+        errormsg("'"+tokens[i]+"' is not a valid number, identifier, or symbol.")
+def evaluate(x):
+    if x in regs:
+        errormsg("Internal attempt to interpret register as label")
+    if is_int(x):
+        wr32(to_int(x))
+    elif x=='$':
+        wr32(location)
+    elif("-po" in args):
+        emit(x)
+    elif(x in names.keys()):
+        wr32(names[x])
+    else:
+        errormsg("'"+tokens[i]+"' is not a valid number, identifier, or symbol.")
 while i<len(tokens):
     if tokens[i].endswith(':'):
         names[tokens[i].replace(':','')]=location
@@ -122,6 +148,10 @@ while i<len(tokens):
             for j in names:
                 m=m.replace(j,str(names[j]))
             #print(eval(m))
+        elif tokens[i]==".align":
+            i+=1
+            qzx=parseint(tokens[i],False)
+            location+=4-(location%4)
         elif tokens[i]=='"':
             i+=1
             location+=len(tokens[i])
@@ -191,7 +221,7 @@ while i<len(tokens):
             location+=4
             i+=1
         else:
-            print("preprocessor:  invalid token: "+tokens[i])
+            errormsg("preprocessor:  invalid token: "+tokens[i])
     i+=1
 lsloc=location
 location=0
@@ -210,25 +240,16 @@ def wr32(x):
 def wr16(x):
     emit(((x>>8)+256)&255)
     emit(x&255)
-def evaluate(x):
-    if x in regs:
-        errormsg("Internal attempt to interpret register as label")
-    if is_int(x):
-        wr32(to_int(x))
-    elif x=='$':
-        wr32(location)
-    elif("-po" in args):
-        emit(x)
-    elif(x in names.keys()):
-        wr32(names[x])
-    else:
-        errormsg("'"+tokens[i]+"' is not a valid number, identifier, or symbol.")
 i=0
-def errormsg(string):
-    print("Error on line "+str(tklines[i])+": "+string)
 org_done=False
 base=0
+lsi=-1
 while i<len(tokens):
+    if(i<=lsi):
+        print("FATAL in pass2, i NOT incremented as expected. (i="+str(i)+", lsi="+str(lsi)+")")
+        print("You should NOT see this message, please contact devs immediately.")
+        quit(-1)
+    lsi=i
     tokens[i]=tokens[i].lower()
     if tokens[i].endswith(':'):
         pass
@@ -270,6 +291,15 @@ while i<len(tokens):
         for j in names:
             m=m.replace(j,str(names[j]))
         #print(eval(m))
+    elif tokens[i]==".align":
+        i+=1
+        qzx=parseint(tokens[i])
+        for teyuf in range(qzx-(location%qzx)):
+            if("-po" in args):
+                emit(-1)
+            else:
+                emit(0)
+        location+=qzx-(location%qzx)
     else:
         if not org_done:
             base=location

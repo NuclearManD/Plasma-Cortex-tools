@@ -739,7 +739,7 @@ void gen_ds(FILE *f, zmax size, struct Typ *t){
 }
 void gen_align(FILE *f, zmax align){
 	
-	emit(f,"align %ld",zm2l(align));
+	emit(f,".align %ld\n",zm2l(align));
 }
 void gen_var_head(FILE *f, struct Var *v){
 	
@@ -752,7 +752,8 @@ void gen_var_head(FILE *f, struct Var *v){
 	if(v->storage_class==EXTERN){
 		emit(f,"\t.global\t_%s\n",v->identifier);
 		if(v->flags&(DEFINED|TENTATIVE)){
-			emit(f,"\talign\t4\n_%s:\n",v->identifier);
+			gen_align(f,4);
+			emit(f,"_%s:\n",v->identifier);
 		}
 	}
 }
