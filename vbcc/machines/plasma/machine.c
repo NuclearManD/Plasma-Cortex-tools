@@ -675,37 +675,37 @@ void gen_code(FILE *f,struct IC *p,struct Var *v,zmax offset)
 				to save 5 bytes and up to 8 cycles.
 			*/
 			if(isconst(q2)){
-				if(c==ADD&&p->q2.val==1){ // increment, not add
+				if(c==ADD&&p->q2.val.vmax==1){ // increment, not add
 					load_reg(f,acc,&p->q1,t);
 					emit(f,"\tinc\tax\n");
 					store_reg(f,acc,&p->z,t);
-				}else if(c==SUB&&p->q2.val==1){ // decrement, not subtract
+				}else if(c==SUB&&p->q2.val.vmax==1){ // decrement, not subtract
 					load_reg(f,acc,&p->q1,t);
 					emit(f,"\tdec\tax\n");
 					store_reg(f,acc,&p->z,t);
-				}else if(c==MUL&&p->q2.val==2){
+				}else if(c==MULT&&p->q2.val.vmax==2){
 					load_reg(f,acc,&p->q1,t);
 					emit(f,"\tshl\tax\n"); // better to shift left
 					store_reg(f,acc,&p->z,t);
-				}else if(c==MUL&&p->q2.val==1);else{ // don't multiply by one.  It's a waste.
+				}else if(c==MULT&&p->q2.val.vmax==1);else{ // don't multiply by one.  It's a waste.
 					load_reg(f,acc,&p->q1,t);
 					emit(f,"\t%s\tax, %d\n",s,p->q2.val);
 					store_reg(f,acc,&p->z,t);
 				}
 			}else if(isconst(q1)){
-				if(c==ADD&&p->q1.val==1){ // increment, not add
+				if(c==ADD&&p->q1.val.vmax==1){ // increment, not add
 					load_reg(f,acc,&p->q2,t);
 					emit(f,"\tinc\tax\n");
 					store_reg(f,acc,&p->z,t);
-				}else if(c==SUB&&p->q1.val==1){ // decrement, not subtract
+				}else if(c==SUB&&p->q1.val.vmax==1){ // decrement, not subtract
 					load_reg(f,acc,&p->q2,t);
 					emit(f,"\tdec\tax\n");
 					store_reg(f,acc,&p->z,t);
-				}else if(c==MUL&&p->q1.val==2){
+				}else if(c==MULT&&p->q1.val.vmax==2){
 					load_reg(f,acc,&p->q2,t);
 					emit(f,"\tshl\tax\n"); // better to shift left
 					store_reg(f,acc,&p->z,t);
-				}else{
+				}else if(c==MULT&&p->q2.val.vmax==1);else{
 					load_reg(f,acc,&p->q2,t); // load q2 bc q1 is a constant.
 					emit(f,"\t%s\tax, %d\n",s,p->q1.val);
 					store_reg(f,acc,&p->z,t);
