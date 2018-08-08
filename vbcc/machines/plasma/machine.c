@@ -658,15 +658,58 @@ void gen_code(FILE *f,struct IC *p,struct Var *v,zmax offset)
 				Could be replaced with:
 				
 					add ax, 22
+					
+				Also, this
+					
+					mov bx, 1
+					add ax, bx
+				
+				can be replaced with
+				
+					add ax, 1
+				
+				then be replaced with
+					
+					inc ax
+				
+				to save 5 bytes and up to 8 cycles.
 			*/
 			if(isconst(q2)){
-				load_reg(f,acc,&p->q1,t);
-				emit(f,"\t%s\tax, %d\n",s,p->q2.val);
-				store_reg(f,acc,&p->z,t);
+				if(c==ADD&&p->q2.val==1){ // increment, not add
+					load_reg(f,acc,&p->q1,t);
+					emit(f,"\tinc\tax\n");
+					store_reg(f,acc,&p->z,t);
+				}else if(c==SUB&&p->q2.val==1){ // decrement, not subtract
+					load_reg(f,acc,&p->q1,t);
+					emit(f,"\tdec\tax\n");
+					store_reg(f,acc,&p->z,t);
+				}else if(c==MUL&&p->q2.val==2){
+					load_reg(f,acc,&p->q1,t);
+					emit(f,"\tshl\tax\n"); // better to shift left
+					store_reg(f,acc,&p->z,t);
+				}else if(c==MUL&&p->q2.val==1);else{ // don't multiply by one.  It's a waste.
+					load_reg(f,acc,&p->q1,t);
+					emit(f,"\t%s\tax, %d\n",s,p->q2.val);
+					store_reg(f,acc,&p->z,t);
+				}
 			}else if(isconst(q1)){
-				load_reg(f,acc,&p->q2,t); // load q2 bc q1 is a constant.
-				emit(f,"\t%s\tax, %d\n",s,p->q1.val);
-				store_reg(f,acc,&p->z,t);
+				if(c==ADD&&p->q1.val==1){ // increment, not add
+					load_reg(f,acc,&p->q2,t);
+					emit(f,"\tinc\tax\n");
+					store_reg(f,acc,&p->z,t);
+				}else if(c==SUB&&p->q1.val==1){ // decrement, not subtract
+					load_reg(f,acc,&p->q2,t);
+					emit(f,"\tdec\tax\n");
+					store_reg(f,acc,&p->z,t);
+				}else if(c==MUL&&p->q1.val==2){
+					load_reg(f,acc,&p->q2,t);
+					emit(f,"\tshl\tax\n"); // better to shift left
+					store_reg(f,acc,&p->z,t);
+				}else{
+					load_reg(f,acc,&p->q2,t); // load q2 bc q1 is a constant.
+					emit(f,"\t%s\tax, %d\n",s,p->q1.val);
+					store_reg(f,acc,&p->z,t);
+				}
 			}else{
 				load_reg(f,acc,&p->q1,t);
 				load_reg(f,2,&p->q2,t); // load into BX
