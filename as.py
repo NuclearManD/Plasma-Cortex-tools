@@ -49,8 +49,8 @@ if len(tmp)>0:
     tklines.append(linenum)
 
 regs=['ax','bx','cx','dx','si','di','sp','pc']
-math_ops={'add':0x80, 'sub':0x81, 'mul':0x82, 'div':0x83, 'xor':0x85, 'and':0x86, 'or':0x87, 'shl':0xC0,'shr':0xC1,'sar':0xC2,'abs':0xC3,'not':0xC4,'inc':0xC6,'dec':0xC7}
-
+math_ops={'add':0x80, 'sub':0x81, 'mul':0x82, 'div':0x83, 'xor':0x85, 'and':0x86, 'or':0x87}
+math_ops_onearg={'shl':0xC0,'shr':0xC1,'sar':0xC2,'abs':0xC3,'not':0xC4,'inc':0xC6,'dec':0xC7}
 names={}
 glbls=[]
 sizes={}
@@ -178,7 +178,9 @@ while i<len(tokens):
         elif tokens[i] in math_ops.keys():
             if(tokens[i+1]=='sp' and can_eval(tokens[i+2]) and tokens[i]=='add'):
                 location+=4 # adding constant to sp
-                i+=1
+            location+=1
+            i+=2
+        elif tokens[i] in math_ops_onearg.keys():
             location+=1
             i+=1
         elif tokens[i] in ["push","pop"]:
@@ -343,6 +345,13 @@ while i<len(tokens):
             emit(0x7C)
             evaluate(tokens[i])
             location+=5
+        elif tokens[i] in math_ops_onearg.keys():
+            i+=1
+            try:
+                emit(math_ops[tokens[i-1]]|(regs.index(tokens[i])<<4))
+            except:
+                errormsg("'"+tokens[i]+"' is not a valid 32-bit register.")
+            location+=1
         elif tokens[i] in math_ops.keys():
             if(tokens[i+1]=='sp' and can_eval(tokens[i+2]) and tokens[i]=='add'):
                 emit(0x7D)
@@ -350,9 +359,9 @@ while i<len(tokens):
                 i+=2
                 evaluate(tokens[i])
             else:
-                i+=1
+                i+=2
                 try:
-                    emit(math_ops[tokens[i-1]]|(regs.index(tokens[i])<<4))
+                    emit(math_ops[tokens[i-2]]|(regs.index(tokens[i])<<4))
                 except:
                     errormsg("'"+tokens[i]+"' is not a valid 32-bit register.")
                 location+=1
