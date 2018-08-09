@@ -359,7 +359,12 @@ while i<len(tokens):
                 i+=2
                 evaluate(tokens[i])
             else:
-                i+=2
+                i+=1
+                if not tokens[i] in regs:
+                    errormsg("'"+tokens[i]+"' is not a valid 32-bit register.")
+                elif tokens[i]!='ax' and tokens[i+1] in regs:
+                    errormsg("Invalid opcode.")
+                i+=1
                 try:
                     emit(math_ops[tokens[i-2]]|(regs.index(tokens[i])<<4))
                 except:

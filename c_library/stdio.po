@@ -1,0 +1,1 @@
+{'size': [0, 0], 'code': [], 'lbl': {'_gets': 15, '_getchar': 10, '_printf': 5}}
