@@ -9,8 +9,8 @@ typedef signed char zchar;
 typedef unsigned char zuchar;
 typedef signed short zshort;
 typedef unsigned short zushort;
-typedef signed short zint;
-typedef unsigned short zuint;
+typedef signed int zint;
+typedef unsigned int zuint;
 typedef signed int zlong;
 typedef unsigned int zulong;
 typedef signed long long zllong;
@@ -30,7 +30,7 @@ typedef dt13f zldouble;
 typedef double dt13t;
 dt13t dtcnv13f(dt13f);
 dt13f dtcnv13t(dt13t);
-typedef unsigned short zpointer;
+typedef unsigned int zpointer;
 #define zc2zm(x) ((signed long long)(x))
 #define zs2zm(x) ((signed long long)(x))
 #define zi2zm(x) ((signed long long)(x))
@@ -38,7 +38,7 @@ typedef unsigned short zpointer;
 #define zll2zm(x) ((signed long long)(x))
 #define zm2zc(x) ((signed char)(x))
 #define zm2zs(x) ((signed short)(x))
-#define zm2zi(x) ((signed short)(x))
+#define zm2zi(x) ((signed int)(x))
 #define zm2zl(x) ((signed int)(x))
 #define zm2zll(x) ((signed long long)(x))
 #define zuc2zum(x) ((unsigned long long)(x))
@@ -48,7 +48,7 @@ typedef unsigned short zpointer;
 #define zull2zum(x) ((unsigned long long)(x))
 #define zum2zuc(x) ((unsigned char)(x))
 #define zum2zus(x) ((unsigned short)(x))
-#define zum2zui(x) ((unsigned short)(x))
+#define zum2zui(x) ((unsigned int)(x))
 #define zum2zul(x) ((unsigned int)(x))
 #define zum2zull(x) ((unsigned long long)(x))
 #define zum2zm(x) ((signed long long)(x))
@@ -62,7 +62,7 @@ typedef unsigned short zpointer;
 #define zld2zum(x) ((unsigned long long)dtcnv13f(x))
 #define zum2zld(x) dtcnv13t((double)(x))
 #define zp2zum(x) ((unsigned long long)(x))
-#define zum2zp(x) ((unsigned short)(x))
+#define zum2zp(x) ((unsigned int)(x))
 #define l2zm(x) ((signed long long)(x))
 #define ul2zum(x) ((unsigned long long)(x))
 #define d2zld(x) dtcnv13t((double)(x))

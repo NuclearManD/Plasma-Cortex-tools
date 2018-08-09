@@ -178,9 +178,8 @@ while i<len(tokens):
         elif tokens[i] in math_ops.keys():
             if(tokens[i+1]=='sp' and can_eval(tokens[i+2]) and tokens[i]=='add'):
                 location+=4 # adding constant to sp
-                i+=1
             location+=1
-            i+=1
+            i+=2
         elif tokens[i] in ["push","pop"]:
             location+=1
             i+=1
@@ -351,8 +350,13 @@ while i<len(tokens):
                 evaluate(tokens[i])
             else:
                 i+=1
+                if not tokens[i] in regs:
+                    errormsg("'"+tokens[i]+"' is not a valid 32-bit register.")
+                elif tokens[i]!='ax' and tokens[i+1] in regs:
+                    errormsg("Invalid opcode.")
+                i+=1
                 try:
-                    emit(math_ops[tokens[i-1]]|(regs.index(tokens[i])<<4))
+                    emit(math_ops[tokens[i-2]]|(regs.index(tokens[i])<<4))
                 except:
                     errormsg("'"+tokens[i]+"' is not a valid 32-bit register.")
                 location+=1
