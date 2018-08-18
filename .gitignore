@@ -43,3 +43,5 @@ vbcc/machines/bi386/machine.h
 test.asm
 build/asplasma/out00-PYZ.toc
 build/asplasma/warnasplasma.txt
+vbcc/machines/plasma/av.o
+vbcc/machines/plasma/opt.o
