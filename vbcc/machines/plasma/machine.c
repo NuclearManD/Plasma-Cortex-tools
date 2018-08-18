@@ -461,7 +461,7 @@ void gen_code(FILE *f,struct IC *p,struct Var *v,zmax offset)
 			emit(f,"\tor\tax\n");
 			continue;
 		} 
-		if(c==COMPARE&&isconst(q1)){
+		/*if(c==COMPARE&&isconst(q1)){
 			if(isreg(q2)){
 				emit(f,"\tsub\t%s, %d",regnames[p->q2.reg],p->q1.val.vmax);
 				continue;
@@ -472,7 +472,7 @@ void gen_code(FILE *f,struct IC *p,struct Var *v,zmax offset)
 				emit(f,"\tsub\t%s, %d",regnames[p->q1.reg],p->q2.val.vmax);
 				continue;
 			}
-		}
+		}*/
 		switch_IC(p);
 		if(c==CONVERT){
 			int to=p->typf2&NU;
@@ -688,8 +688,12 @@ void gen_code(FILE *f,struct IC *p,struct Var *v,zmax offset)
 					emit(f,"\tshl\tax\n"); // better to shift left
 					store_reg(f,acc,&p->z,t);
 				}else if(c==MULT&&p->q2.val.vmax==1);else{ // don't multiply by one.  It's a waste.
-					load_reg(f,acc,&p->q1,t);
+					/*load_reg(f,acc,&p->q1,t);
 					emit(f,"\t%s\tax, %d\n",s,p->q2.val);
+					store_reg(f,acc,&p->z,t);*/
+					load_reg(f,acc,&p->q1,t);
+					load_reg(f,2,&p->q2,t); // load into BX
+					emit(f,"\t%s\tax, bx\n",s);
 					store_reg(f,acc,&p->z,t);
 				}
 			}else if(isconst(q1)){
@@ -706,8 +710,12 @@ void gen_code(FILE *f,struct IC *p,struct Var *v,zmax offset)
 					emit(f,"\tshl\tax\n"); // better to shift left
 					store_reg(f,acc,&p->z,t);
 				}else if(c==MULT&&p->q2.val.vmax==1);else{
-					load_reg(f,acc,&p->q2,t); // load q2 bc q1 is a constant.
+					/*load_reg(f,acc,&p->q2,t); // load q2 bc q1 is a constant.
 					emit(f,"\t%s\tax, %d\n",s,p->q1.val);
+					store_reg(f,acc,&p->z,t);*/
+					load_reg(f,acc,&p->q1,t);
+					load_reg(f,2,&p->q2,t); // load into BX
+					emit(f,"\t%s\tax, bx\n",s);
 					store_reg(f,acc,&p->z,t);
 				}
 			}else{
