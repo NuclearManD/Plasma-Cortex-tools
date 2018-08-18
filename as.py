@@ -358,6 +358,8 @@ while i<len(tokens):
                 location+=5
                 i+=2
                 evaluate(tokens[i])
+            #elif can_eval(tokens[i+2]):
+            #    
             else:
                 i+=1
                 if not tokens[i] in regs:
