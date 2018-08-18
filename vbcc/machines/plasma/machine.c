@@ -281,7 +281,7 @@ static void load_reg(FILE *f,int r,struct obj *o,int t)
 	if(r==1&&(o->flags&(KONST|DREFOBJ))==KONST){
 		eval_const(&o->val,t);
 		if(zmeqto(vmax,l2zm(0L))&&zumeqto(vumax,ul2zum(0UL))&&r==1){
-			emit(f,"\txor\tax\n");
+			emit(f,"\txor\tax, ax\n");
 			return;
 		}
 	}
@@ -458,7 +458,7 @@ void gen_code(FILE *f,struct IC *p,struct Var *v,zmax offset)
 
 		if(c==TEST){
 			load_reg(f,acc,&p->q1,p->typf2&NU);
-			emit(f,"\tor\tax\n");
+			emit(f,"\tor\tax, ax\n");
 			continue;
 		} 
 		/*if(c==COMPARE&&isconst(q1)){
@@ -607,7 +607,7 @@ void gen_code(FILE *f,struct IC *p,struct Var *v,zmax offset)
 			continue;
 		}
 		if(c==LSHIFT){
-			if(isconst(q2)&&p->q2.val.vmax>2){
+			if(isconst(q2)&&zm2l(p->q2.val.vmax)>2){
 				// in this case multiply is faster than lshift (mul ax, * => ~12 cycles, 8 cycles per lshift)
 				p->q2.val.vmax=(1<<p->q2.val.vmax);
 				c=MULT;
@@ -630,7 +630,7 @@ void gen_code(FILE *f,struct IC *p,struct Var *v,zmax offset)
 				if(p->q2.val.vmax==0) continue; // optimize out; does nothing
 				load_reg(f,acc,&p->q1,t);
 				// todo: check for unsigned (idk how rn)
-				for(i=0;i<p->q2.val.vmax;i++){
+				for(i=0;i<zm2l(p->q2.val.vmax);i++){
 					emit(f,"\tsar ax\n");
 				}
 				store_reg(f,acc,&p->z,t);

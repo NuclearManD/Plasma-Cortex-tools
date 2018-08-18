@@ -12,7 +12,7 @@ _main:
 	mov	cx,ax
 	; type=68
 	mov	ax,cx
-	or	ax
+	or	ax, ax
 	; type=70
 	jz	l4
 	; type=2
@@ -144,10 +144,10 @@ _sd_exec:
 	; type=50
 	mov	[sp+0], ax
 	; type=2
-	xor	ax
+	xor	ax, ax
 	mov	[sp+4], ax
 	; type=78
-	xor	ax
+	xor	ax, ax
 	push	ax
 	; type=2
 	mov	ax,16
@@ -158,7 +158,8 @@ _sd_exec:
 	mov	cx,ax
 	; type=16
 	mov	ax,cx
-	or	ax, 64
+	mov	bx,64
+	or	ax, bx
 	mov	cx,ax
 	; type=78
 	mov	ax,cx
@@ -266,7 +267,7 @@ _sd_exec:
 	jmp	l13
 l12:
 	; type=78
-	xor	ax
+	xor	ax, ax
 	push	ax
 	; type=2
 	mov	ax,17
@@ -283,11 +284,12 @@ l12:
 	mov	[sp+40], ax
 	; type=18
 	mov	ax, [sp+40]
-	and	ax, 128
+	mov	bx,128
+	and	ax, bx
 	mov	cx,ax
 	; type=68
 	mov	ax,cx
-	or	ax
+	or	ax, ax
 	; type=70
 	jz	l17
 	; type=94
@@ -303,12 +305,13 @@ l15:
 l13:
 	; type=77
 	mov	ax, [sp+36]
-	sub	ax, 64
+	mov	bx,64
+	sub	ax, bx
 	; type=72
 	jc	l12
 l14:
 	; type=94
-	xor	ax
+	xor	ax, ax
 l11:
 	add	sp,44
 	ret
@@ -317,7 +320,7 @@ l11:
 _sd_init:
 	add	sp,-4
 	; type=2
-	xor	ax
+	xor	ax, ax
 	mov	[sp+0], ax
 	; type=78
 	mov	ax,255
@@ -330,7 +333,7 @@ _sd_init:
 	jmp	l20
 l19:
 	; type=78
-	xor	ax
+	xor	ax, ax
 	push	ax
 	; type=2
 	mov	ax,16
@@ -344,24 +347,25 @@ l22:
 l20:
 	; type=77
 	mov	ax, [sp+8]
-	sub	ax, 10
+	mov	bx,10
+	sub	ax, bx
 	; type=72
 	jc	l19
 l21:
 	; type=2
-	xor	ax
+	xor	ax, ax
 	mov	[sp+8], ax
 	; type=76
 	jmp	l24
 l23:
 	; type=78
-	xor	ax
+	xor	ax, ax
 	push	ax
 	; type=78
 	mov	ax,149
 	push	ax
 	; type=2
-	xor	ax
+	xor	ax, ax
 	; type=42
 	call _sd_exec
 	; type=93
@@ -370,7 +374,10 @@ l23:
 	mov	ax,cx
 	mov	cx,ax
 	; type=77
-	sub	cx, 0	; type=74
+	mov	ax,cx
+	mov	bx,0
+	sub	ax, bx
+	; type=74
 	jLessThanOrEqualTo	l28
 l27:
 	; type=76
@@ -378,12 +385,13 @@ l27:
 l28:
 	; type=77
 	mov	ax, [sp+16]
-	sub	ax, 9
+	mov	bx,9
+	sub	ax, bx
 	; type=71
 	jnz	l31
 l30:
 	; type=94
-	xor	ax
+	xor	ax, ax
 	; type=76
 	jmp	l18
 l31:
@@ -396,7 +404,8 @@ l26:
 l24:
 	; type=77
 	mov	ax, [sp+16]
-	sub	ax, 10
+	mov	bx,10
+	sub	ax, bx
 	; type=72
 	jc	l23
 l25:

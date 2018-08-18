@@ -4,6 +4,7 @@ class plasma_cortex:
         self.regs=[0,0,0,0,0,0,0xFFFFFF,0]
         self.comp=computer
         self.s=-1
+        self.c=0
     def tick(self):
         try:
             return self._tick_raw()
@@ -51,6 +52,18 @@ class plasma_cortex:
         elif opcode==0xE9 :
             # jnz *
             if(self.s!=0):
+                self.regs[7]=self.read_q(self.regs[7]+1)
+            else:
+                self.regs[7]+=5
+        elif opcode==0xEA :
+            # jc *
+            if(self.c!=0):
+                self.regs[7]=self.read_q(self.regs[7]+1)
+            else:
+                self.regs[7]+=5
+        elif opcode==0xEB :
+            # jnc *
+            if(self.c==0):
                 self.regs[7]=self.read_q(self.regs[7]+1)
             else:
                 self.regs[7]+=5
@@ -189,6 +202,7 @@ class plasma_cortex:
                 result=b-1
         if result<0:
             result+=top_val
+        self.c=result>>32
         result=result%top_val
         self.s=result
         return result

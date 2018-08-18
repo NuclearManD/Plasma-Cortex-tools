@@ -164,6 +164,12 @@ while i<len(tokens):
         elif tokens[i]=="jnz":
             i=i+1
             location+=5
+        elif tokens[i]=="jc":
+            i=i+1
+            location+=5
+        elif tokens[i]=="jnc":
+            i=i+1
+            location+=5
         elif tokens[i]=="call":
             location+=5
             i+=1
@@ -340,6 +346,16 @@ while i<len(tokens):
             emit(0xE9)
             evaluate(tokens[i])
             location+=5
+        elif tokens[i]=="jc":
+            i=i+1
+            emit(0xEA)
+            evaluate(tokens[i])
+            location+=5
+        elif tokens[i]=="jnc":
+            i=i+1
+            emit(0xEB)
+            evaluate(tokens[i])
+            location+=5
         elif tokens[i]=="call":
             i+=1
             emit(0x7C)
@@ -348,7 +364,7 @@ while i<len(tokens):
         elif tokens[i] in math_ops_onearg.keys():
             i+=1
             try:
-                emit(math_ops[tokens[i-1]]|(regs.index(tokens[i])<<4))
+                emit(math_ops_onearg[tokens[i-1]]|(regs.index(tokens[i])<<4))
             except:
                 errormsg("'"+tokens[i]+"' is not a valid 32-bit register.")
             location+=1
