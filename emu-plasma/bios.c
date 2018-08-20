@@ -1,6 +1,6 @@
-void out(char data, int adr);
-char in(int adr);
-void printf(char* str);
+extern void out(char data, int adr);
+extern char in(int adr);
+extern void printf(char* str);
 
 #define spi_sel_sd() out(16, 0)
 /* select device 255 (doesn't exist) */
@@ -10,22 +10,23 @@ void printf(char* str);
 #define false 0
 
 int main(){
-	printf("Loading...");
+	printf("Loading...\n");
 	if(sd_init()){
-		printf("Block device found: SD card");
+		printf("Block device found: SD card\n");
 	}else
-		printf("Error initializing SD card.  No block devices, cannot boot.");
+		printf("Error initializing SD card.  No block devices, cannot boot.\n");
 	while(true);
 }
 
 char sd_exec(char cmd, int args, char crc){
 	int i=0, q;
+	printf("- sd_exec -\n");
 	spi_sel_sd();
 	out(17, cmd|0x40);
 	out(17, args>>24);
 	out(17, args>>16);
 	out(17, args>>8);
-	out(17, args);
+	out(17, args&255);
 	out(17, crc);
 	for(;i<64;i++){
 		out(17, 0);
@@ -37,14 +38,19 @@ char sd_exec(char cmd, int args, char crc){
 
 int sd_init(){
 	int i=0;
+	printf("- sd_init -\n");
 	spi_desel();
+	printf("clocking SD card...\n");
 	for(;i<10;i++){
-		out(16, 0); /* supply clocks to SD card */
+		out(17, 0); /* supply clocks to SD card */
 	}
+	printf("communicating...\n");
 	for(i=0;i<10;i++){
         if(sd_exec(0,0,0x95)>0){
             break;
-        }else if(i==9)return 0;
+        }else if(i==9){
+			return 0;
+		}
 	}
     return 1;
 }

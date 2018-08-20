@@ -17,6 +17,7 @@ class SPI_controller:
             return self.read
         return 255
     def io_write(self, adr, data):
+        #print("SPI write : "+hex(adr))
         if(adr==0):
             self.sel=data
         elif(adr==1):

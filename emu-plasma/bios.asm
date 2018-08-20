@@ -2,8 +2,7 @@
 	.global	main
 _main:
 	; type=2
-	mov	di, l2
-	mov	ax, [di]
+	mov	ax, l2
 	; type=42
 	call _printf
 	; type=42
@@ -16,16 +15,14 @@ _main:
 	; type=70
 	jz	l4
 	; type=2
-	mov	di, l5
-	mov	ax, [di]
+	mov	ax, l5
 	; type=42
 	call _printf
 	; type=76
 	jmp	l6
 l4:
 	; type=2
-	mov	di, l7
-	mov	ax, [di]
+	mov	ax, l7
 	; type=42
 	call _printf
 l6:
@@ -64,6 +61,7 @@ l1:
 		db	 97
 		db	 114
 		db	 100
+		db	 10
 		db	 0
 .section DATA
 	l2:		db	 76
@@ -76,6 +74,7 @@ l1:
 		db	 46
 		db	 46
 		db	 46
+		db	 10
 		db	 0
 .section DATA
 	l7:		db	 69
@@ -137,6 +136,7 @@ l1:
 		db	 111
 		db	 116
 		db	 46
+		db	 10
 		db	 0
 	.global	sd_exec
 _sd_exec:
@@ -146,6 +146,10 @@ _sd_exec:
 	; type=2
 	xor	ax, ax
 	mov	[sp+4], ax
+	; type=2
+	mov	ax, l12
+	; type=42
+	call _printf
 	; type=78
 	xor	ax, ax
 	push	ax
@@ -153,8 +157,10 @@ _sd_exec:
 	mov	ax,16
 	; type=42
 	call _out
+	pop bx
+	; s_o+=4
 	; type=50
-	mov	ax, [sp+4]
+	mov	ax, [sp+0]
 	mov	cx,ax
 	; type=16
 	mov	ax,cx
@@ -168,8 +174,10 @@ _sd_exec:
 	mov	ax,17
 	; type=42
 	call _out
+	pop bx
+	; s_o+=4
 	; type=26
-	mov	ax, [sp+24]
+	mov	ax, [sp+16]
 	sar ax
 	sar ax
 	sar ax
@@ -202,8 +210,10 @@ _sd_exec:
 	mov	ax,17
 	; type=42
 	call _out
+	pop bx
+	; s_o+=4
 	; type=26
-	mov	ax, [sp+28]
+	mov	ax, [sp+16]
 	sar ax
 	sar ax
 	sar ax
@@ -228,8 +238,10 @@ _sd_exec:
 	mov	ax,17
 	; type=42
 	call _out
+	pop bx
+	; s_o+=4
 	; type=26
-	mov	ax, [sp+32]
+	mov	ax, [sp+16]
 	sar ax
 	sar ax
 	sar ax
@@ -246,15 +258,24 @@ _sd_exec:
 	mov	ax,17
 	; type=42
 	call _out
+	pop bx
+	; s_o+=4
+	; type=18
+	mov	ax, [sp+16]
+	mov	bx,255
+	and	ax, bx
+	mov	cx,ax
 	; type=78
-	mov	ax, [sp+36]
+	mov	ax,cx
 	push	ax
 	; type=2
 	mov	ax,17
 	; type=42
 	call _out
+	pop bx
+	; s_o+=4
 	; type=50
-	mov	ax, [sp+47]
+	mov	ax, [sp+23]
 	mov	cx,ax
 	; type=78
 	mov	ax,cx
@@ -263,9 +284,11 @@ _sd_exec:
 	mov	ax,17
 	; type=42
 	call _out
+	pop bx
+	; s_o+=4
 	; type=76
-	jmp	l13
-l12:
+	jmp	l14
+l13:
 	; type=78
 	xor	ax, ax
 	push	ax
@@ -273,6 +296,8 @@ l12:
 	mov	ax,17
 	; type=42
 	call _out
+	pop bx
+	; s_o+=4
 	; type=2
 	mov	ax,17
 	; type=42
@@ -281,9 +306,9 @@ l12:
 	mov	cx,ax
 	; type=50
 	mov	ax,cx
-	mov	[sp+40], ax
+	mov	[sp+8], ax
 	; type=18
-	mov	ax, [sp+40]
+	mov	ax, [sp+8]
 	mov	bx,128
 	and	ax, bx
 	mov	cx,ax
@@ -291,37 +316,55 @@ l12:
 	mov	ax,cx
 	or	ax, ax
 	; type=70
-	jz	l17
+	jz	l18
 	; type=94
-	mov	ax, [sp+40]
+	mov	ax, [sp+8]
 	; type=76
 	jmp	l11
-l17:
-l15:
+l18:
+l16:
 	; type=27
-	mov	ax, [sp+36]
+	mov	ax, [sp+4]
 	inc	ax
-	mov	[sp+36], ax
-l13:
+	mov	[sp+4], ax
+l14:
 	; type=77
-	mov	ax, [sp+36]
+	mov	ax, [sp+4]
 	mov	bx,64
 	sub	ax, bx
 	; type=72
-	jc	l12
-l14:
+	jc	l13
+l15:
 	; type=94
 	xor	ax, ax
 l11:
-	add	sp,44
+	add	sp,12
 	ret
-	.equ	__stack_sd_exec,44
+	.equ	__stack_sd_exec,16
+.section DATA
+	l12:		db	 45
+		db	 32
+		db	 115
+		db	 100
+		db	 95
+		db	 101
+		db	 120
+		db	 101
+		db	 99
+		db	 32
+		db	 45
+		db	 10
+		db	 0
 	.global	sd_init
 _sd_init:
 	add	sp,-4
 	; type=2
 	xor	ax, ax
 	mov	[sp+0], ax
+	; type=2
+	mov	ax, l20
+	; type=42
+	call _printf
 	; type=78
 	mov	ax,255
 	push	ax
@@ -329,35 +372,51 @@ _sd_init:
 	mov	ax,16
 	; type=42
 	call _out
+	pop bx
+	; s_o+=4
+	; type=2
+	mov	ax, l21
+	; type=42
+	call _printf
 	; type=76
-	jmp	l20
-l19:
+	jmp	l23
+l22:
 	; type=78
 	xor	ax, ax
 	push	ax
 	; type=2
-	mov	ax,16
+	mov	ax,17
 	; type=42
 	call _out
-l22:
+	pop bx
+	; s_o+=4
+l25:
 	; type=27
-	mov	ax, [sp+8]
+	mov	ax, [sp+0]
 	inc	ax
-	mov	[sp+8], ax
-l20:
+	mov	[sp+0], ax
+l23:
 	; type=77
-	mov	ax, [sp+8]
+	mov	ax, [sp+0]
 	mov	bx,10
 	sub	ax, bx
 	; type=72
-	jc	l19
-l21:
+	jc	l22
+l24:
+	; type=2
+	mov	ax, l26
+	; type=42
+	call _printf
 	; type=2
 	xor	ax, ax
-	mov	[sp+8], ax
+	mov	[sp+0], ax
 	; type=76
-	jmp	l24
-l23:
+	jmp	l28
+l27:
+	; type=2
+	mov	ax, l31
+	; type=42
+	call _printf
 	; type=78
 	xor	ax, ax
 	push	ax
@@ -368,6 +427,8 @@ l23:
 	xor	ax, ax
 	; type=42
 	call _sd_exec
+	add	sp, 8
+	; s_o+=8
 	; type=93
 	mov	cx,ax
 	; type=50
@@ -378,43 +439,129 @@ l23:
 	mov	bx,0
 	sub	ax, bx
 	; type=74
-	jLessThanOrEqualTo	l28
-l27:
+	jzc	l33
+l32:
+	; type=2
+	mov	ax, l34
+	; type=42
+	call _printf
 	; type=76
-	jmp	l25
-l28:
+	jmp	l29
+l33:
 	; type=77
-	mov	ax, [sp+16]
+	mov	ax, [sp+0]
 	mov	bx,9
 	sub	ax, bx
 	; type=71
-	jnz	l31
-l30:
+	jnz	l37
+l36:
+	; type=2
+	mov	ax, l38
+	; type=42
+	call _printf
 	; type=94
 	xor	ax, ax
 	; type=76
-	jmp	l18
-l31:
-l29:
-l26:
+	jmp	l19
+l37:
+l35:
+l30:
 	; type=27
-	mov	ax, [sp+16]
+	mov	ax, [sp+0]
 	inc	ax
-	mov	[sp+16], ax
-l24:
+	mov	[sp+0], ax
+l28:
 	; type=77
-	mov	ax, [sp+16]
+	mov	ax, [sp+0]
 	mov	bx,10
 	sub	ax, bx
 	; type=72
-	jc	l23
-l25:
+	jc	l27
+l29:
 	; type=94
 	mov	ax,1
-l18:
-	add	sp,20
+l19:
+	add	sp,4
 	ret
-	.equ	__stack_sd_init,20
+	.equ	__stack_sd_init,12
+.section DATA
+	l34:		db	 65
+		db	 76
+		db	 76
+		db	 71
+		db	 79
+		db	 79
+		db	 68
+		db	 59
+		db	 0
+.section DATA
+	l38:		db	 101
+		db	 114
+		db	 114
+		db	 111
+		db	 114
+		db	 33
+		db	 10
+		db	 0
+.section DATA
+	l31:		db	 65
+		db	 10
+		db	 0
+.section DATA
+	l20:		db	 45
+		db	 32
+		db	 115
+		db	 100
+		db	 95
+		db	 105
+		db	 110
+		db	 105
+		db	 116
+		db	 32
+		db	 45
+		db	 10
+		db	 0
+.section DATA
+	l21:		db	 99
+		db	 108
+		db	 111
+		db	 99
+		db	 107
+		db	 105
+		db	 110
+		db	 103
+		db	 32
+		db	 83
+		db	 68
+		db	 32
+		db	 99
+		db	 97
+		db	 114
+		db	 100
+		db	 46
+		db	 46
+		db	 46
+		db	 10
+		db	 0
+.section DATA
+	l26:		db	 99
+		db	 111
+		db	 109
+		db	 109
+		db	 117
+		db	 110
+		db	 105
+		db	 99
+		db	 97
+		db	 116
+		db	 105
+		db	 110
+		db	 103
+		db	 46
+		db	 46
+		db	 46
+		db	 10
+		db	 0
 .section DATA
 	.global	_out
 .section DATA

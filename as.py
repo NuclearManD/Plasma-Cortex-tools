@@ -170,6 +170,12 @@ while i<len(tokens):
         elif tokens[i]=="jnc":
             i=i+1
             location+=5
+        elif tokens[i]=="jzc":
+            i=i+1
+            location+=5
+        elif tokens[i]=="jg":
+            i=i+1
+            location+=5
         elif tokens[i]=="call":
             location+=5
             i+=1
@@ -354,6 +360,16 @@ while i<len(tokens):
         elif tokens[i]=="jnc":
             i=i+1
             emit(0xEB)
+            evaluate(tokens[i])
+            location+=5
+        elif tokens[i]=="jzc":
+            i=i+1
+            emit(0xEC)
+            evaluate(tokens[i])
+            location+=5
+        elif tokens[i]=="jg":
+            i=i+1
+            emit(0xED)
             evaluate(tokens[i])
             location+=5
         elif tokens[i]=="call":

@@ -1,4 +1,6 @@
 top_val=2**32
+check_breaks=False
+check_self_reset=True
 class plasma_cortex:
     def setup(self, computer):
         self.regs=[0,0,0,0,0,0,0xFFFFFF,0]
@@ -16,6 +18,7 @@ class plasma_cortex:
             return -1
     def _tick_raw(self):
         opcode=self.comp.mem_read(self.regs[7])
+        start_pc=self.regs[7]
         if(opcode&0x88)==0:
             # mov r, r
             if(opcode&7)<7:
@@ -67,6 +70,18 @@ class plasma_cortex:
                 self.regs[7]=self.read_q(self.regs[7]+1)
             else:
                 self.regs[7]+=5
+        elif opcode==0xEC :
+            # jzc *
+            if(self.c!=0 or self.s==0):
+                self.regs[7]=self.read_q(self.regs[7]+1)
+            else:
+                self.regs[7]+=5
+        elif opcode==0xED :
+            # jg *
+            if(self.c==0 and self.s!=0):
+                self.regs[7]=self.read_q(self.regs[7]+1)
+            else:
+                self.regs[7]+=5
         elif opcode==0x6C :
             # djnz *
             if(self.regs[2]==0):
@@ -94,22 +109,25 @@ class plasma_cortex:
             # in dx, ax
             self.regs[0]=self.comp.io_read(self.regs[3])
             self.regs[7]+=1
-        elif (opcode&0x88)==0x80:
-            # math
-            r=self.alu(opcode&15,self.regs[0],self.regs[7&(opcode>>4)])
-            if (opcode&0x40)>0:
-                self.regs[7&(opcode>>4)]=r
-            else:
-                self.regs[0]=r
+        elif (opcode&0xC8)==0x80:
+            # math 2 arg
+            r=self.alu(opcode&7,self.regs[0],self.regs[3&(opcode>>4)])
+            self.regs[0]=r
+            self.regs[7]+=1
+        elif (opcode&0xC8)==0xC0:
+            # math 1 arg
+            r=self.alu((opcode&7)+8,self.regs[0],self.regs[3&(opcode>>4)])
+            self.regs[3&(opcode>>4)]=r
             self.regs[7]+=1
         elif (opcode&0xFC)==0x08:
             # mov r, [sp+*]
-            #print(hex(self.regs[6]+1+self.read_ds(self.regs[7]+1)))
+            #print("mov ?, ["+hex(self.regs[6]+1+self.read_ds(self.regs[7]+1))+"] ("+hex(self.read_q(self.regs[6]+1+self.read_ds(self.regs[7]+1))))
             self.regs[opcode&3]=self.read_q(self.regs[6]+1+self.read_ds(self.regs[7]+1))
             self.regs[7]+=3
         elif (opcode&0xFC)==0x88:
             # mov [sp+*], r
-            self.write_q(self.regs[6]-3+self.read_ds(self.regs[7]+1),self.regs[opcode&3])
+            #print("mov ["+hex(self.regs[6]+1+self.read_ds(self.regs[7]+1))+"], "+["ax=","bx=","cx=","dx="][opcode&3]+hex(self.regs[opcode&3]))
+            self.write_q(self.regs[6]+1+self.read_ds(self.regs[7]+1),self.regs[opcode&3])
             self.regs[7]+=3
         elif (opcode&0x08)==8 and ((opcode&0xF0)>=0x30) and ((opcode&0xF0)<=0x50):
             # mov r, [r]
@@ -120,13 +138,25 @@ class plasma_cortex:
             self.write_q(self.regs((opcode>>4)&7),self.regs[opcode&7])
             self.regs[7]+=1
         elif (opcode==0x7d):
+            # add sp, *
+            #print("add "+hex(self.regs[6])+"(sp), "+hex(self.read_q(self.regs[7]+1)))
             self.regs[6]+=self.read_q(self.regs[7]+1)
+            self.regs[6]=self.regs[6]%(2**32)
+            #print("> "+hex(self.regs[6]))
             self.regs[7]+=5
         else:
             print("cpu: error: invalid opcode "+hex(opcode))
             self.print_details()
             print("[Error details end]")
             return -1
+        if (start_pc<(self.regs[7]-5) or start_pc>self.regs[7]):
+            if check_breaks or (check_self_reset and self.regs[7]==0):
+                print("break to "+hex(self.regs[7]))
+                if input("Print details? [Y/n]")=='Y':
+                    print("opcode: "+hex(opcode))
+                    print("old pc: "+hex(start_pc))
+                    self.print_details()
+                    print("[End Details]")
         return 0
     def print_details(self):
         print("Registers:")
@@ -169,13 +199,21 @@ class plasma_cortex:
         return num
     def alu(self, op, a, b):
         result=2**32-1
+        self.c=0
         if(op<8):
             if op==0:
                 result=a+b
+                if(result>=top_val):
+                    self.c=1
             elif op==1:
                 result=a-b
+                if(a<b):
+                    self.c=1
+                    #print("sub result is negative ("+hex(a)+"-"+hex(b)+"), ax="+hex(self.regs[0]))
             elif op==2:
                 result=a*b
+                if(result>=top_val):
+                    self.c=1
             elif op==5:
                 result=a^b
             elif op==6:
@@ -183,26 +221,35 @@ class plasma_cortex:
             elif op==7:
                 result=a|b
         else:
+            op-=8
             if op==0:
                 result=b<<1
+                if(result>=top_val):
+                    self.c=1
             elif op==1:
                 result=b>>1
+                self.c=b&1
             elif op==2:
                 if b>=(2**31):
                     result=(b>>1)|(2**31)
                 else:
                     result=b>>1
+                self.c=b&1
             elif op==3:
                 result=int(abs(b))
             elif op==4:
                 result=top_val-1-b
             elif op==6:
                 result=b+1
+                if(result>=top_val):
+                    self.c=1
+                #print("inc "+hex(b))
             elif op==7:
                 result=b-1
+                if(result<0 or (result>>31)==1):
+                    self.c=1
         if result<0:
             result+=top_val
-        self.c=result>>32
         result=result%top_val
         self.s=result
         return result

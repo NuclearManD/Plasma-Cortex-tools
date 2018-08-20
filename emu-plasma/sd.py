@@ -22,18 +22,24 @@ class SD_card:
             self.count=0
         elif(self.state==STATE_FETCH):
             self.count+=1
+            if self.count>5:
+                #print("SD ERROR:  state=fetch and count=",self.count)
+                return 0
             self.data[self.count]=data_in
             if(self.count==5):
+                self.state=STATE_READY
                 self.exec()
         elif(self.state==STATE_USTRT and data_in==0x40):
-            self.data[0]=data_in
+            self.data[0]=0x40
             self.state=STATE_FETCH
             self.count=0
         elif(self.state==STATE_RETURN):
             self.state=STATE_READY
+            self.count=0
             return self.count
         else:
-            print("SD card warning: invalid state, no match.")
+            print("SD card warning: invalid state, no match. goto state READY")
+            self.state=STATE_READY
         return 0
     def spi_clk8(self):
         if(self.state==STATE_STARTING):
@@ -41,13 +47,15 @@ class SD_card:
             if(self.count<=0):
                 self.state=STATE_USTRT
     def exec(self):
+        #print("SD: exec: data=",self.data)
         crc=self.data[5]
         cmd=self.data[0]
         args=self.data[1:-1]
         args.reverse()
         retval=255
+        self.count=0
+        self.state=STATE_RETURN
         if(cmd==0x40 and crc==0x95):
-            self.state=STATE_READY
             retval=0
         elif(cmd==0x48 and crc==0x87):
             pass
@@ -56,9 +64,9 @@ class SD_card:
             print("cmd=",hex(cmd))
             print("crc=",hex(crc))
             print("arg=",args)
+            print("data=",self.data)
             return 0 # on error
         self.count=0x80|retval
-        self.state=STATE_RETURN
 def sd_exec(mysd, cmd, args, crc):
     mysd.spi_exx(cmd|0x40)
     mysd.spi_exx(args[3])

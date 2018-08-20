@@ -1,4 +1,4 @@
-import spi, sd, cpu, kbd, ser
+import spi, sd, cpu, kbd, ser, time
 class computer:
     def __init__(self, cpu, deviceMap,ramq,rom=b'\x77'):
         self.cpu=cpu
@@ -15,21 +15,20 @@ class computer:
             err=-1
         return err
     def io_write(self, adr, data):
+        #print('iowr '+hex(adr)+' : '+hex(data&255))
         dev=adr>>4
         if(dev in self.devs.keys()):
-            self.devs[dev].io_write(adr&16,data)
+            self.devs[dev].io_write(adr&15,data&255)
         #print("io_wr "+hex(adr)+" <= "+hex(data))
-    def io_read(self, adr, data):
+    def io_read(self, adr):
         dev=adr>>4
         if(dev in self.devs.keys()):
-            return self.devs[dev].io_read(adr&16)
-        print("io_rd "+hex(adr))
+            return self.devs[dev].io_read(adr&15)
         return 255
     def mem_write(self, adr, data):
-        self.ram[adr%self.ramlen]=data%256
+        self.ram[adr%self.ramlen]=data&255
     def mem_read(self, adr):
         return self.ram[adr%self.ramlen]
-
 print("Initializing...")
 dev_spi=spi.SPI_controller()
 dev_spi.add_spi_device(0,sd.SD_card("sysdisk.bin"))
@@ -41,7 +40,10 @@ file=open("bios.bin",'rb')
 boot_code=file.read()
 file.close()
 comp=computer(plasma, device_map, 1024*1024, boot_code)
-super_verbose=True#False#True#False#True
+
+super_verbose=False#True#False#True
+speed=0#.001
+
 while True:
     err=comp.tick()
     if(err==-1):
@@ -53,3 +55,8 @@ while True:
     if(super_verbose):
         plasma.print_details()
         input("Enter for next tick")
+    elif(speed>0):
+        try:
+            time.sleep(speed)
+        except:
+            input("Sleep interrupted; press enter to continue or ctrl+c to quit.")

@@ -86,8 +86,8 @@ static struct obj *cc;
 static struct obj mobj;
 
 // this will have to be modified
-static char *ccs[]={"z","nz","c","nc","LessThanOrEqualTo","GreaterThan"}; // signed?
-static char *uccs[]={"z","nz","c","nc","LessThan|EqualTo","GreaterThan"};// unsigned?
+static char *ccs[]={"z","nz","c","nc","zc","g"}; // signed?
+static char *uccs[]={"z","nz","c","nc","zc","g"};// unsigned?
 
 static long voff(struct obj *p)
 {
@@ -99,6 +99,7 @@ static long voff(struct obj *p)
 static void pop(long l)
 {
 	stackoffset+=l;
+	
 }
 static void push(long l)
 {
@@ -158,8 +159,7 @@ static void load_obj(FILE *f,struct obj *p,int t,int reg)
 			emit(f,"+%d\n",zm2l(p->val.vmax));
 			emit(f,"\tmov\t%s, [di]\n",regnames[reg]);
 		}else if(isstatic(p->v->storage_class)){
-			emit(f,"\tmov\tdi, l%d\n",p->v->offset);
-			emit(f,"\tmov\t%s, [di]\n",regnames[reg]);
+			emit(f,"\tmov\t%s, l%d\n",regnames[reg],p->v->offset);
 		}else
 			emit(f,"\tmov\t%s, [sp+%d]\n",regnames[reg],voff(p));
 	}
@@ -186,8 +186,9 @@ static void store_obj(FILE *f,struct obj *p,int t, int r)
 			emit(f,"+%d\n",zm2l(p->val.vmax));
 			emit(f,"\tmov\t[di], %s\n",regnames[r]);
 		}else if(isstatic(p->v->storage_class)){
-			emit(f,"\tmov\tdi, %u\n",p->v->offset);
-			emit(f,"\tmov\t[di], %s\n",regnames[r]);
+			//emit(f,"\tmov\tdi, %u\n",p->v->offset);
+			//emit(f,"\tmov\t[di], %s\n",regnames[r]);
+			printf("Attempt to load into static!!\n");
 		}else
 			emit(f,"\tmov\t[sp+%d], %s\n",voff(p),regnames[r]);
 	}
@@ -216,6 +217,7 @@ static void function_bottom(FILE *f,struct Var *v,long offset)
 		else
 			emit(f,"\tadd\tsp,%d\n",offset-stackoffset);
 	}
+	stackoffset=0;
 	emit(f,"\tret\n");
 	if(v->storage_class==EXTERN){
 		//emit(f,"\t.type\t%s%s,@function\n",idprefix,v->identifier);
@@ -267,9 +269,9 @@ static void gen_pop(FILE *f,long l)
 		BSET(regs_modified,4);
 	}else{
 		emit(f,"\tadd\tsp, %ld\n",l);
-		return;
 	}
 	pop(l);
+	emit(f,"\t; s_o+=%i\n",l);
 }
 static void load_reg(FILE *f,int r,struct obj *o,int t)
 {
@@ -437,7 +439,7 @@ void gen_code(FILE *f,struct IC *p,struct Var *v,zmax offset)
 			emit(f,"\tjmp\tl%d\n",t);
 			continue;
 		}
-		if(c>=BEQ&&c<BRA){			
+		if(c>=BEQ&&c<BRA){
 			if(t&UNSIGNED)
 				emit(f,"\tj%s\tl%d\n",uccs[c-BEQ],t);
 			else
@@ -537,7 +539,7 @@ void gen_code(FILE *f,struct IC *p,struct Var *v,zmax offset)
 					emit(f,"\tcall ax\n");
 				}
 			}
-			//if(p->arg_cnt)
+			gen_pop(f,zm2l(p->q2.val.vmax));
 			continue;
 		}if(c==ASSIGN){
 			if((&p->q1)->flags&(VAR|REG|DREFOBJ)==REG&&(&p->z)->flags&(VAR|REG|DREFOBJ)==REG&&(&p->q1)->reg==(&p->z)->reg){
@@ -568,6 +570,7 @@ void gen_code(FILE *f,struct IC *p,struct Var *v,zmax offset)
 				emit(f,"\tpush dx\n");
 				reg=4;
 				push(4);
+				emit(f,"\t; s_o-=%i\n",4);
 			}
 			//load_addr(f,reg,&p->q1);
 			if(!(p->z.flags&REG)||p->z.reg!=reg)
@@ -575,6 +578,8 @@ void gen_code(FILE *f,struct IC *p,struct Var *v,zmax offset)
 			if(px){
 				emit(f,"\tpop dx\n");
 				pop(4);
+				emit(f,"\t; s_o+=%i\n",4);
+				px=0;
 			}
 			continue;
 		}

@@ -17,7 +17,7 @@ _printf:
 	mov dx, 0
 __serwrt_loop:
 	lodsb
-	or ax
+	or ax, ax
 	jz __serwrt_done
 	out dx, ax
 	jmp __serwrt_loop
@@ -36,6 +36,4 @@ _out:
 	mov ax, [sp+8]
 	out dx, ax
 	pop dx
-	pop ax
-	pop si
-	mov pc, ax
+	ret
