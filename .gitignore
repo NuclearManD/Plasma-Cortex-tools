@@ -46,3 +46,4 @@ build/asplasma/warnasplasma.txt
 vbcc/machines/plasma/av.o
 vbcc/machines/plasma/opt.o
 *.ic2
+emu-plasma/blockdev.raw

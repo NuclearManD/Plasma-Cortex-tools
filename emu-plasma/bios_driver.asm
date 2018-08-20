@@ -15,13 +15,13 @@ _printf:
 	push dx
 	mov si, ax
 	mov dx, 0
-__serwrt_loop:
+serwrt_loop:
 	lodsb
 	or ax, ax
-	jz __serwrt_done
+	jz serwrt_done
 	out dx, ax
-	jmp __serwrt_loop
-__serwrt_done:
+	jmp serwrt_loop
+serwrt_done:
 	pop dx
 	pop ax
 	pop si
@@ -36,4 +36,19 @@ _out:
 	mov ax, [sp+8]
 	out dx, ax
 	pop dx
+	ret
+_memcpy:
+	push di
+	push si
+	push cx
+	mov di, ax
+	mov si, [sp+16]
+	mov cx, [sp+20]
+memcpy_lopen:
+	lodsb
+	stosb
+	djnz memcpy_lopen
+	pop cx
+	pop si
+	pop di
 	ret

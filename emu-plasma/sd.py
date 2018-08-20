@@ -17,7 +17,9 @@ class SD_card:
             pass
         elif(self.state==STATE_READY):
             self.data[0]=data_in
-            if(data_in&0x40>0):
+            if(data_in==0xFF):
+                return 0xFF
+            elif(data_in&0x40>0):
                 self.state=STATE_FETCH
             self.count=0
         elif(self.state==STATE_FETCH):
@@ -35,7 +37,6 @@ class SD_card:
             self.count=0
         elif(self.state==STATE_RETURN):
             self.state=STATE_READY
-            self.count=0
             return self.count
         else:
             print("SD card warning: invalid state, no match. goto state READY")
@@ -66,7 +67,7 @@ class SD_card:
             print("arg=",args)
             print("data=",self.data)
             return 0 # on error
-        self.count=0x80|retval
+        self.count=retval
 def sd_exec(mysd, cmd, args, crc):
     mysd.spi_exx(cmd|0x40)
     mysd.spi_exx(args[3])
@@ -76,16 +77,29 @@ def sd_exec(mysd, cmd, args, crc):
     mysd.spi_exx(crc)
     for i in range(128):
         retval=mysd.spi_exx(0)
-        if(retval&0x80)>0:
+        if(retval&0x80)==0:
             return retval
     return 0
 def sd_test(mysd):
     for i in range(10):
         mysd.spi_exx(0)
     for i in range(10):
-        if(sd_exec(mysd,0,[0,0,0,0],0x95)>0):
+        if sd_exec(mysd,0,[0,0,0,0],0x95)==1:
             break;
         elif(i==9):
             return False
     return True
-    
+def sd_read(mysd,block):
+    for i in range(20):
+        if mysd.spi_exec(0xff)==0xff:
+            break
+        elif i==19:
+            return False
+    result = sd_exec(17, block)
+    if (result&0xC0 != 0):
+        return False
+    // Reset the block byte count
+    blockByteCount = 0;
+    blockReadState = ReadStateWait;
+    blockReadMode = ReadModeSingleBlock;
+    chipSelectEnd();

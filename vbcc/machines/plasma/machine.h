@@ -14,9 +14,9 @@ struct AddressingMode {
 #define LITTLEENDIAN 0
 #define SWITCHSUBS 1
 #define INLINEMEMCPY 1024*1024
-#define ORDERED_PUSH 0
+//#define ORDERED_PUSH 1
 
-#define HAVE_REGPARMS 1
+#define HAVE_REGPARMS 0
 
 struct reg_handle {
   int gpr;

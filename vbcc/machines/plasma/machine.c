@@ -91,6 +91,7 @@ static char *uccs[]={"z","nz","c","nc","zc","g"};// unsigned?
 
 static long voff(struct obj *p)
 {
+	//printf("VOFF: loff=%i, offset=%i, vmax=%i, stackoffset=%i\n", loff,zm2l(p->v->offset),zm2l(p->val.vmax),stackoffset);
 	if(zm2l(p->v->offset)<0) 
 		return loff-zm2l(p->v->offset)+zm2l(p->val.vmax)-stackoffset;
 	else
@@ -307,8 +308,8 @@ end private functions
 
 
 int init_cg(void){
-	sizetab[CHAR]=l2zm(1L);
-	sizetab[SHORT]=l2zm(2L);
+	sizetab[CHAR]=l2zm(4L);
+	sizetab[SHORT]=l2zm(4L);
 	sizetab[INT]=l2zm(4L);
 	sizetab[LONG]=l2zm(4L);
 	sizetab[LLONG]=l2zm(4L);
@@ -317,9 +318,9 @@ int init_cg(void){
 	sizetab[LDOUBLE]=l2zm(8L);
 	sizetab[VOID]=l2zm(4L);
 	sizetab[POINTER]=l2zm(4L);
-	sizetab[ARRAY]=l2zm(1L);
-	sizetab[STRUCT]=l2zm(1L);
-	sizetab[UNION]=l2zm(1L);
+	sizetab[ARRAY]=l2zm(4L);
+	sizetab[STRUCT]=l2zm(4L);
+	sizetab[UNION]=l2zm(4L);
 	
 	align[CHAR]=l2zm(1L);
 	align[SHORT]=l2zm(2L);
